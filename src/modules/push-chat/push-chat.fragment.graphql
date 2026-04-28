@@ -1,0 +1,34 @@
+fragment F_PushChatMessage on T_PushChatMessage {
+    id
+    isDel
+    createdAt
+    updatedAt
+    content
+    targetAudience
+    sentById
+    sentBy {
+        ...F_User
+    }
+    recipientCount
+}
+
+fragment F_PushChatAudienceDistribution on T_PushChatAudienceDistribution {
+    all
+    members
+    nonMembers
+}
+
+fragment F_PushChatStats on T_PushChatStats {
+    totalSent
+    thisMonth
+    avgLength
+    audienceDistribution {
+        ...F_PushChatAudienceDistribution
+    }
+}
+
+fragment F_SendPushChatResult on T_SendPushChatResult {
+    messageId
+    recipientCount
+    createdAt
+}

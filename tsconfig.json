@@ -1,0 +1,29 @@
+{
+    "extends": "./node_modules/@cyberskill/shared/public/tsconfig.base.json",
+    "compilerOptions": {
+        "incremental": true,
+        "jsx": "react-jsx",
+        "baseUrl": ".",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "paths": {
+            "#public/*": [
+                "public/*"
+            ],
+            "#modules/*": [
+                "./src/modules/*"
+            ],
+            "#shared/*": [
+                "./src/shared/*"
+            ]
+        },
+        "noEmit": true
+    },
+    "include": [
+        "**/*.ts",
+        "**/*.tsx"
+    ],
+    "exclude": [
+        "src/shared/graphql/generated"
+    ]
+}

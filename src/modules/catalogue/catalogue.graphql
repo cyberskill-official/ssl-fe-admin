@@ -1,0 +1,62 @@
+query getCatalogue($filter: Input_QueryCatalogue!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getCatalogue(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_Catalogue
+        }
+    }
+}
+
+query getCatalogues($filter: Input_QueryCatalogue, $options: JSON) {
+    getCatalogues(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Catalogue
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createCatalogue($doc: Input_CreateCatalogue!) {
+    createCatalogue(doc: $doc) {
+        success
+        message
+        result {
+            ...F_Catalogue
+        }
+    }
+}
+
+mutation updateCatalogue($filter: Input_QueryCatalogue!, $update: Input_UpdateCatalogue!, $options: JSON) {
+    updateCatalogue(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_Catalogue
+        }
+    }
+}
+
+mutation deleteCatalogue($filter: Input_QueryCatalogue!, $options: JSON) {
+    deleteCatalogue(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_Catalogue
+        }
+    }
+}

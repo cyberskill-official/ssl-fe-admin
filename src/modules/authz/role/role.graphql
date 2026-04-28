@@ -1,0 +1,52 @@
+query getRoles($filter: Input_QueryRole, $options: JSON) {
+    getRoles(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Role
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createRole($doc: Input_CreateRole!) {
+    createRole(doc: $doc) {
+        success
+        message
+        result {
+            ...F_Role
+        }
+    }
+}
+
+mutation updateRole($filter: Input_QueryRole!, $update: Input_UpdateRole, $options: JSON) {
+    updateRole(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_Role
+        }
+    }
+}
+
+mutation deleteRole($filter: Input_QueryRole!, $options: JSON) {
+    deleteRole(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_Role
+        }
+    }
+}

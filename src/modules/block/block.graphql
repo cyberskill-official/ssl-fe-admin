@@ -1,0 +1,42 @@
+query getBlocks($options: JSON) {
+    getBlocks(options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Block
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation blockUser($doc: Input_CreateBlock!) {
+    block(doc: $doc) {
+        success
+        message
+        result {
+            ...F_Block
+        }
+    }
+}
+
+mutation unBlockUser($filter: Input_UnBlock!, $options: JSON) {
+    unBlock(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_Block
+        }
+    }
+}

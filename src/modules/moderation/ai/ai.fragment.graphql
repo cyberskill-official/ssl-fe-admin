@@ -1,0 +1,44 @@
+fragment F_TextModerationOutput on T_TextModerationOutput {
+    category
+    decision
+    score
+}
+
+fragment F_PIIEntity on T_PIIEntity {
+    type
+    score
+    beginOffset
+    endOffset
+}
+
+fragment F_TextModerationResult on T_TextModerationResult {
+    output {
+        ...F_TextModerationOutput
+    }
+    reasons
+    decision
+    language
+}
+
+fragment F_TextDetection on T_TextDetection {
+    detectedText
+}
+
+fragment F_ContextLabel on T_ContextLabel {
+    name
+    confidence
+    timestampMs
+}
+
+fragment F_MediaModerationResult on T_MediaModerationResult {
+    confidence
+    decision
+    riskLevel
+    reasons
+    textDetection {
+        ...F_TextDetection
+    }
+    contextLabels {
+        ...F_ContextLabel
+    }
+}

@@ -1,0 +1,9 @@
+fragment F_Currency on T_Currency {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    code
+    symbol
+}

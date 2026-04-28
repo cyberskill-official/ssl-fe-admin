@@ -1,0 +1,96 @@
+query getAdvertisement($filter: Input_QueryAdvertisement!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getAdvertisement(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_Advertisement
+        }
+    }
+}
+
+query getAdvertisements($filter: Input_QueryAdvertisement, $options: JSON) {
+    getAdvertisements(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Advertisement
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getAdvertisementByPlacement(
+    $placementType: E_AdvertisementPlacementType!
+    $placementId: String!
+    $slot: E_AdvertisementSlot
+) {
+    getAdvertisementByPlacement(placementType: $placementType, placementId: $placementId, slot: $slot) {
+        success
+        message
+        result {
+            ...F_Advertisement
+        }
+    }
+}
+
+mutation createAdvertisement($doc: Input_CreateAdvertisement!) {
+    createAdvertisement(doc: $doc) {
+        success
+        message
+        result {
+            ...F_Advertisement
+        }
+    }
+}
+
+mutation updateAdvertisement($filter: Input_QueryAdvertisement!, $update: Input_UpdateAdvertisement!, $options: JSON) {
+    updateAdvertisement(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_Advertisement
+        }
+    }
+}
+
+mutation deleteAdvertisement($filter: Input_QueryAdvertisement!, $options: JSON) {
+    deleteAdvertisement(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_Advertisement
+        }
+    }
+}
+
+mutation clickAdvertisement($filter: Input_QueryAdvertisement!) {
+    clickAdvertisement(filter: $filter) {
+        success
+        message
+        result {
+            ...F_Advertisement
+        }
+    }
+}
+
+mutation updateClickCount($filter: Input_QueryAdvertisement!, $update: Input_UpdateClickCount!) {
+    updateClickCount(filter: $filter, update: $update) {
+        success
+        message
+        result {
+            ...F_Advertisement
+        }
+    }
+}

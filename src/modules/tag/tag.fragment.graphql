@@ -1,0 +1,14 @@
+fragment F_Tag on T_Tag {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    type
+    isCustom
+    createdById
+    createdBy {
+        ...F_UserWithoutPartnersAndTags
+    }
+    usageCount
+}

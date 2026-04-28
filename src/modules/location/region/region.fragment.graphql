@@ -1,0 +1,8 @@
+fragment F_Region on T_Region {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    wikiDataId
+}

@@ -1,0 +1,21 @@
+fragment F_RoleParent on T_Role {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    description
+}
+
+fragment F_Role on T_Role {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    description
+    parentId
+    parent {
+        ...F_RoleParent
+    }
+}

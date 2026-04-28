@@ -1,0 +1,8 @@
+fragment F_Seo on T_Seo {
+    title
+    description
+    keywords
+    socialImage
+    socialMediaDescription
+    altTextForImages
+}

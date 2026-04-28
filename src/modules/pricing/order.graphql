@@ -1,0 +1,55 @@
+query getOrders($filter: Input_QueryOrder, $options: JSON) {
+    getOrders(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                id
+                isDel
+                createdAt
+                updatedAt
+                userId
+                user {
+                    id
+                    username
+                    email
+                    lastLoginIp
+                }
+                amount
+                status
+                orderType
+                paymentTransactionId
+                meta
+                pricingId
+                pricing {
+                    id
+                    type
+                    price
+                    taxRate
+                    country {
+                        id
+                        name
+                        iso2
+                        iso3
+                    }
+                    currency {
+                        id
+                        code
+                        symbol
+                    }
+                }
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}

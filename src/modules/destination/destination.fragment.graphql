@@ -1,0 +1,67 @@
+fragment F_Hotel on T_Hotel {
+    name
+    locationId
+    location {
+        ...F_Location
+    }
+    url
+    description
+    image
+}
+
+fragment F_Destination on T_Destination {
+    id
+    isDel
+    createdAt
+    updatedAt
+    type
+    name
+    slug
+    websiteURL
+    rating
+    images
+    introductionHeadline
+    introductionContent
+    introductionContentPlain
+    ageGroup
+    locationId
+    location {
+        ...F_Location
+    }
+    logo
+    nearbyHotels {
+        ...F_Hotel
+    }
+    wearImage
+    womenDressCode
+    menDressCode
+    useDefaultText
+    atmosphereRating {
+        ...F_Rating
+    }
+    guestsRating {
+        ...F_Rating
+    }
+    facilitiesRating {
+        ...F_Rating
+    }
+    serviceRating {
+        ...F_Rating
+    }
+    xFactorRating {
+        ...F_Rating
+    }
+    highlightSex
+    highlightWellness
+    highlightBar
+    highlightDance
+    seo {
+        ...F_Seo
+    }
+    linkTo
+    isActive
+    createdById
+    createdBy {
+        ...F_User
+    }
+}

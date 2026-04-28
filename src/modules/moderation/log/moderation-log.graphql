@@ -1,0 +1,150 @@
+query GetModerationLogs($filter: Input_QueryModerationLog, $options: JSON) {
+    getModerationLogs(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                id
+                isDel
+                createdAt
+                updatedAt
+                action
+                userId
+                user {
+                    id
+                    username
+                    email
+                }
+                targetUserId
+                targetUser {
+                    id
+                    username
+                    email
+                }
+                moderationMediaId
+                moderationMedia {
+                    id
+                    type
+                    url
+                    status
+                    uploadedById
+                    uploadedBy {
+                        id
+                        username
+                        email
+                    }
+                }
+                messageId
+                message {
+                    id
+                }
+                aiResult {
+                    confidence
+                    decision
+                    riskLevel
+                    reasons
+                }
+                reason
+            }
+            totalDocs
+            limit
+            totalPages
+            page
+            pagingCounter
+            hasPrevPage
+            hasNextPage
+            prevPage
+            nextPage
+        }
+    }
+}
+
+query GetModerationLog($filter: Input_QueryModerationLog!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getModerationLog(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            id
+            isDel
+            createdAt
+            updatedAt
+            action
+            userId
+            user {
+                id
+                username
+                email
+            }
+            targetUserId
+            targetUser {
+                id
+                username
+                email
+            }
+            moderationMediaId
+            moderationMedia {
+                id
+                type
+                url
+                status
+                uploadedById
+                uploadedBy {
+                    id
+                    username
+                    email
+                }
+            }
+            messageId
+            message {
+                id
+            }
+            aiResult {
+                confidence
+                decision
+                riskLevel
+                reasons
+            }
+            reason
+        }
+    }
+}
+
+mutation CreateModerationLog($doc: Input_CreateModerationLog!) {
+    createModerationLog(doc: $doc) {
+        success
+        message
+        result {
+            id
+            action
+            userId
+            moderationMediaId
+            messageId
+            reason
+            createdAt
+        }
+    }
+}
+
+mutation UpdateModerationLog($filter: Input_QueryModerationLog!, $update: Input_UpdateModerationLog!, $options: JSON) {
+    updateModerationLog(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            id
+            action
+            reason
+            updatedAt
+        }
+    }
+}
+
+mutation DeleteModerationLog($filter: Input_QueryModerationLog!, $options: JSON) {
+    deleteModerationLog(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            id
+            isDel
+        }
+    }
+}

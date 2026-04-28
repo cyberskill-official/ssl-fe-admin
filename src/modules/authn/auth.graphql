@@ -1,0 +1,52 @@
+query checkAuth($token: String) {
+    checkAuth(token: $token) {
+        success
+        result {
+            user {
+                ...F_User
+            }
+            token
+        }
+    }
+}
+
+mutation sendOTPEmailForAdmin($email: String!) {
+    sendOTPEmailForAdmin(email: $email) {
+        success
+        message
+        result {
+            user {
+                ...F_User
+            }
+        }
+    }
+}
+
+mutation login($identity: String!, $password: String!, $rememberMe: Boolean, $tempOtp: String) {
+    login(identity: $identity, password: $password, rememberMe: $rememberMe, tempOtp: $tempOtp) {
+        success
+        message
+        result {
+            user {
+                ...F_User
+            }
+            token
+        }
+    }
+}
+
+mutation logout {
+    logout {
+        success
+    }
+}
+
+mutation createGuardianVisitToken {
+    createGuardianVisitToken {
+        success
+        message
+        result {
+            token
+        }
+    }
+}

@@ -1,0 +1,12 @@
+mutation upload($type: E_UploadType!, $entity: E_UploadEntity!, $entityId: String, $file: Upload!) {
+    upload(type: $type, entity: $entity, entityId: $entityId, file: $file) {
+        success
+        message
+        result {
+            url
+            moderationMediaId
+            status
+            entityId
+        }
+    }
+}

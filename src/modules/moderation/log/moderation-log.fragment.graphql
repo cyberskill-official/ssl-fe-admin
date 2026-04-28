@@ -1,0 +1,56 @@
+fragment F_ModerationLog on T_ModerationLog {
+    id
+    isDel
+    createdAt
+    updatedAt
+    action
+    type
+    userId
+    user {
+        id
+        username
+        email
+    }
+    targetUserId
+    targetUser {
+        id
+        username
+        email
+    }
+    moderationMediaId
+    moderationMedia {
+        id
+        type
+        url
+        status
+        uploadedById
+        uploadedBy {
+            id
+            username
+            email
+        }
+    }
+    messageId
+    message {
+        id
+        content {
+            type
+            value
+        }
+    }
+    reason
+    aiResult {
+        confidence
+        decision
+        riskLevel
+        reasons
+        textDetection {
+            detectedText
+        }
+        contextLabels {
+            name
+            confidence
+            timestampMs
+        }
+    }
+}

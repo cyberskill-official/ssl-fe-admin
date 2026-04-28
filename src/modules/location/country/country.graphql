@@ -1,0 +1,22 @@
+query getCountries($filter: Input_QueryCountry, $options: JSON) {
+    getCountries(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Country
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}

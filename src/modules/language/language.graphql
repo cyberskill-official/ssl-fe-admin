@@ -1,0 +1,34 @@
+query getLanguages($filter: Input_QueryLanguage, $options: JSON) {
+    getLanguages(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Language
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getAllLanguages {
+    getLanguages {
+        success
+        message
+        result {
+            docs {
+                ...F_Language
+            }
+        }
+    }
+}

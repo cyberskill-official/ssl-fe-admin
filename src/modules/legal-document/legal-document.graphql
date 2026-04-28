@@ -1,0 +1,62 @@
+query getLegalDocument($filter: Input_QueryLegalDocument!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getLegalDocument(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_LegalDocument
+        }
+    }
+}
+
+query getLegalDocuments($filter: Input_QueryLegalDocument, $options: JSON) {
+    getLegalDocuments(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_LegalDocument
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation publishLegalDocument($doc: Input_PublishLegalDocument!) {
+    publishLegalDocument(doc: $doc) {
+        success
+        message
+        result {
+            ...F_LegalDocument
+        }
+    }
+}
+
+mutation saveDraftLegalDocument($doc: Input_SaveDraftLegalDocument!) {
+    saveDraftLegalDocument(doc: $doc) {
+        success
+        message
+        result {
+            ...F_LegalDocument
+        }
+    }
+}
+
+mutation restoreLegalDocument($doc: Input_RestoreLegalDocument!) {
+    restoreLegalDocument(doc: $doc) {
+        success
+        message
+        result {
+            ...F_LegalDocument
+        }
+    }
+}

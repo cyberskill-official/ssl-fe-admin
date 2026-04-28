@@ -1,0 +1,18 @@
+fragment F_City on T_City {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    stateId
+    state {
+        ...F_State
+    }
+    countryId
+    country {
+        ...F_Country
+    }
+    latitude
+    longitude
+    wikiDataId
+}

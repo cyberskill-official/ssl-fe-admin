@@ -1,0 +1,7 @@
+query getIp {
+    getIp {
+        success
+        message
+        result
+    }
+}

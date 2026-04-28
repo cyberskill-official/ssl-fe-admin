@@ -1,0 +1,42 @@
+query getRolePermissions($filter: Input_QueryRolePermission, $options: JSON) {
+    getRolePermissions(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_RolePermission
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createRolePermission($doc: Input_CreateRolePermission!) {
+    createRolePermission(doc: $doc) {
+        success
+        message
+        result {
+            ...F_RolePermission
+        }
+    }
+}
+
+mutation deleteRolePermission($filter: Input_QueryRolePermission!) {
+    deleteRolePermission(filter: $filter) {
+        success
+        message
+        result {
+            ...F_RolePermission
+        }
+    }
+}

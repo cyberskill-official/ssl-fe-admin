@@ -1,0 +1,11 @@
+fragment F_Permission on T_Permission {
+    id
+    isDel
+    createdAt
+    updatedAt
+    target
+    name
+    type
+    method
+    isPublic
+}

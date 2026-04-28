@@ -1,0 +1,27 @@
+fragment F_Setting on T_Setting {
+    id
+    isDel
+    createdAt
+    updatedAt
+    type
+    value {
+        ... on T_Footer {
+            socialLinks {
+                type
+                url
+            }
+        }
+        ... on T_AdminNotification {
+            successfulPayments
+            failedPayments
+            newMembers
+        }
+        ... on T_FAQ {
+            entries {
+                question
+                answer
+                isPublished
+            }
+        }
+    }
+}

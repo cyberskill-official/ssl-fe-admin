@@ -1,0 +1,50 @@
+fragment F_RelatedBlog on T_Blog {
+    id
+    title
+    category
+}
+
+fragment F_Blog on T_Blog {
+    id
+    slug
+    isDel
+    createdAt
+    updatedAt
+    title
+    slug
+    authorName
+    websiteName
+    websiteURL
+    type
+    category
+    featuredImage
+    contentHeadline
+    contentSubHeadline
+    content
+    relatedBlogsIds
+    relatedBlogs {
+        ...F_RelatedBlog
+    }
+    languageId
+    language {
+        ...F_Language
+    }
+    hostName
+    logo
+    isLustEditorial
+    cover
+    file
+    readCount
+    isActive
+    socialLinks {
+        type
+        url
+    }
+    authorId
+    author {
+        ...F_User
+    }
+    seo {
+        ...F_Seo
+    }
+}

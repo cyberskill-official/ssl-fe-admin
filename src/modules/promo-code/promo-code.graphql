@@ -1,0 +1,62 @@
+query getPromoCode($filter: Input_QueryPromoCode!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getPromoCode(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_PromoCode
+        }
+    }
+}
+
+query getPromoCodes($filter: Input_QueryPromoCode, $options: JSON) {
+    getPromoCodes(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_PromoCode
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createPromoCode($doc: Input_CreatePromoCode!) {
+    createPromoCode(doc: $doc) {
+        success
+        message
+        result {
+            ...F_PromoCode
+        }
+    }
+}
+
+mutation updatePromoCode($filter: Input_QueryPromoCode!, $update: Input_UpdatePromoCode!, $options: JSON) {
+    updatePromoCode(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_PromoCode
+        }
+    }
+}
+
+mutation deletePromoCode($filter: Input_QueryPromoCode!, $options: JSON) {
+    deletePromoCode(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_PromoCode
+        }
+    }
+}

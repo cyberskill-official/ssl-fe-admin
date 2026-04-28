@@ -1,0 +1,9 @@
+fragment F_MyIp on T_MyIp {
+    ip
+    asn
+    as_name
+    as_domain
+    country_code
+    country
+    continent_code
+}

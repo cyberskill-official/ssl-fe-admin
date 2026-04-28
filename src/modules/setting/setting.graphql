@@ -1,0 +1,62 @@
+query getSetting($filter: Input_QuerySetting!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getSetting(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_Setting
+        }
+    }
+}
+
+query getSettings($filter: Input_QuerySetting, $options: JSON) {
+    getSettings(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Setting
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createSetting($doc: Input_CreateSetting!) {
+    createSetting(doc: $doc) {
+        success
+        message
+        result {
+            ...F_Setting
+        }
+    }
+}
+
+mutation deleteSetting($filter: Input_QuerySetting!, $options: JSON) {
+    deleteSetting(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_Setting
+        }
+    }
+}
+
+mutation updateSetting($filter: Input_QuerySetting!, $update: Input_UpdateSetting, $options: JSON) {
+    updateSetting(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_Setting
+        }
+    }
+}

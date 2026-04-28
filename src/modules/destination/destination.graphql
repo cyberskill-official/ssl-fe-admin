@@ -1,0 +1,62 @@
+query getDestination($filter: Input_QueryDestination!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getDestination(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_Destination
+        }
+    }
+}
+
+query getDestinations($filter: Input_QueryDestination, $options: JSON) {
+    getDestinations(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Destination
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createDestination($doc: Input_CreateDestination!) {
+    createDestination(doc: $doc) {
+        success
+        message
+        result {
+            ...F_Destination
+        }
+    }
+}
+
+mutation updateDestination($filter: Input_QueryDestination!, $update: Input_UpdateDestination!, $options: JSON) {
+    updateDestination(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_Destination
+        }
+    }
+}
+
+mutation deleteDestination($filter: Input_QueryDestination!, $options: JSON) {
+    deleteDestination(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_Destination
+        }
+    }
+}

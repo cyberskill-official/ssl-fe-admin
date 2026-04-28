@@ -1,0 +1,36 @@
+fragment F_PreApproval on T_PreApproval {
+    documentPic
+    selfiePic
+    aiResult {
+        documentAge
+        selfieAgeRange {
+            high
+            low
+        }
+        isOver18
+        similarity
+        dateOfBirth
+    }
+}
+
+fragment F_UserApproval on T_User {
+    id
+    username
+    email
+}
+
+fragment F_AgeVerify on T_AgeVerify {
+    status
+    method
+    dateOfBirth
+    approvedById
+    approvedBy {
+        ...F_UserApproval
+    }
+    approvedAt
+    agreement
+    reason
+    preApproval {
+        ...F_PreApproval
+    }
+}

@@ -1,0 +1,62 @@
+query getCurrencies($filter: Input_QueryCurrency, $options: JSON) {
+    getCurrencies(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Currency
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getCurrency($filter: Input_QueryCurrency!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getCurrency(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_Currency
+        }
+    }
+}
+
+mutation createCurrency($doc: Input_CreateCurrency!) {
+    createCurrency(doc: $doc) {
+        success
+        message
+        result {
+            ...F_Currency
+        }
+    }
+}
+
+mutation updateCurrency($filter: Input_QueryCurrency!, $update: Input_UpdateCurrency!, $options: JSON) {
+    updateCurrency(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_Currency
+        }
+    }
+}
+
+mutation deleteCurrency($filter: Input_QueryCurrency!) {
+    deleteCurrency(filter: $filter) {
+        success
+        message
+        result {
+            ...F_Currency
+        }
+    }
+}

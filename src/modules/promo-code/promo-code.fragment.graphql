@@ -1,0 +1,12 @@
+fragment F_PromoCode on T_PromoCode {
+    id
+    isDel
+    createdAt
+    updatedAt
+    code
+    expiresAt
+    isActive
+    isLimit
+    usageLimit
+    globalUsageLimit
+}

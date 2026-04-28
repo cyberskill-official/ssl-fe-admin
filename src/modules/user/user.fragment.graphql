@@ -1,0 +1,179 @@
+fragment F_UserPartner on T_UserPartner {
+    gender
+    dateOfBirth
+    relationshipStatusIds
+    relationshipStatus {
+        ...F_Tag
+    }
+    sexualOrientationIds
+    sexualOrientation {
+        ...F_Tag
+    }
+    sexualPreferencesIds
+    sexualPreferences {
+        ...F_Tag
+    }
+    smokingHabitsIds
+    smokingHabits {
+        ...F_Tag
+    }
+    preferredDrinksIds
+    preferredDrinks {
+        ...F_Tag
+    }
+    bodyTypeId
+    bodyType {
+        ...F_Tag
+    }
+    heightId
+    height {
+        ...F_Tag
+    }
+    hairColorId
+    hairColor {
+        ...F_Tag
+    }
+    eyeColorId
+    eyeColor {
+        ...F_Tag
+    }
+    galleryId
+    gallery {
+        ...F_Gallery
+    }
+    locationId
+    location {
+        ...F_Location
+    }
+    bio
+}
+
+fragment F_UserSettings_TemporaryLocation on T_UserSettings_TemporaryLocation {
+    location {
+        ...F_Location
+    }
+    endAt
+}
+
+fragment F_UserSettings_Notification on T_UserSettings_Notification {
+    followingPostAnnouncement
+    gainFollower
+    receiveMessage
+    newMemberJoined
+    sound
+}
+
+fragment F_UserSettings on T_UserSettings {
+    timeFormat
+    temporaryLocation {
+        ...F_UserSettings_TemporaryLocation
+    }
+    notification {
+        ...F_UserSettings_Notification
+    }
+}
+fragment F_UserInfo on T_User {
+    id
+    username
+}
+
+fragment F_User on T_User {
+    id
+    isDel
+    createdAt
+    updatedAt
+    username
+    email
+    isEmailVerified
+    accountType
+    partner1 {
+        ...F_UserPartner
+    }
+    partner2 {
+        ...F_UserPartner
+    }
+    nativeLanguageId
+    nativeLanguage {
+        ...F_Language
+    }
+    otherLanguagesIds
+    otherLanguages {
+        ...F_Language
+    }
+    lookingForIds
+    lookingFor {
+        ...F_Tag
+    }
+    profilePurposeIds
+    profilePurpose {
+        ...F_Tag
+    }
+    willingnessToGoIds
+    willingnessToGo {
+        ...F_Tag
+    }
+    rulesOfEngagementIds
+    rulesOfEngagement {
+        ...F_Tag
+    }
+    rolesIds
+    roles {
+        ...F_Role
+    }
+    isActive
+    isOnline
+    lastOnline
+    lastLoginIp
+    settings {
+        ...F_UserSettings
+    }
+    flagCount
+    registerStep
+    ageVerify {
+        ...F_AgeVerify
+    }
+    membershipExpiresAt
+    freeEventCount
+    hasUpcomingEvent
+    inactivityDeletionWarning30SentAt
+    inactivityDeletionWarning10SentAt
+    followerCount
+    followingCount
+    isAdminBlocked
+    isGuardianView
+    guardianOwnerId
+    notes {
+        ...F_Note
+    }
+}
+
+fragment F_UserWithoutPartnersAndTags on T_User {
+    id
+    isDel
+    createdAt
+    updatedAt
+    username
+    email
+    isEmailVerified
+    accountType
+    nativeLanguageId
+    nativeLanguage {
+        ...F_Language
+    }
+    otherLanguagesIds
+    otherLanguages {
+        ...F_Language
+    }
+    rolesIds
+    roles {
+        ...F_Role
+    }
+    isActive
+    isOnline
+    lastOnline
+    settings {
+        ...F_UserSettings
+    }
+    flagCount
+    registerStep
+}

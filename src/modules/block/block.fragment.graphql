@@ -1,0 +1,18 @@
+fragment F_Block on T_Block {
+    id
+    isDel
+    createdAt
+    updatedAt
+    userId
+    blockId
+    user {
+        id
+        username
+        email
+    }
+    block {
+        id
+        username
+        email
+    }
+}

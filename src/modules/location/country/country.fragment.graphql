@@ -1,0 +1,42 @@
+fragment F_TimeZone on T_TimeZone {
+    zoneName
+    gmtOffset
+    gmtOffsetName
+    abbreviation
+    tzName
+}
+
+fragment F_Country on T_Country {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    slug
+    iso2
+    iso3
+    numeric_code
+    phonecode
+    capital
+    currency
+    currency_name
+    currency_symbol
+    tld
+    native
+    regionId
+    region {
+        ...F_Region
+    }
+    subRegionId
+    subRegion {
+        ...F_SubRegion
+    }
+    nationality
+    timezones {
+        ...F_TimeZone
+    }
+    latitude
+    longitude
+    emoji
+    emojiU
+}

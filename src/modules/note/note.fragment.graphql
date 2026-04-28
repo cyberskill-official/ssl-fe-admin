@@ -1,0 +1,6 @@
+fragment F_Note on T_Note {
+    type
+    content
+    createdById
+    createdAt
+}

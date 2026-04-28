@@ -1,0 +1,62 @@
+query getPushChatMessage($filter: Input_QueryPushChatMessage!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getPushChatMessage(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_PushChatMessage
+        }
+    }
+}
+
+query getPushChatMessages($filter: Input_QueryPushChatMessage, $options: JSON) {
+    getPushChatMessages(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_PushChatMessage
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getPushChatStats {
+    getPushChatStats {
+        success
+        message
+        result {
+            ...F_PushChatStats
+        }
+    }
+}
+
+mutation sendPushChat($doc: Input_CreatePushChatMessage!) {
+    sendPushChat(doc: $doc) {
+        success
+        message
+        result {
+            ...F_SendPushChatResult
+        }
+    }
+}
+
+mutation deletePushChatMessage($filter: Input_QueryPushChatMessage!, $options: JSON) {
+    deletePushChatMessage(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_PushChatMessage
+        }
+    }
+}

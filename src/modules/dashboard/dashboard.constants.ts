@@ -1,0 +1,12 @@
+export const DASHBOARD_CONSTANTS = {
+    POLLING_INTERVAL: 30000,
+    ANIMATION: {
+        CONFETTI_DURATION: 5000,
+        MONEY_IMAGE_DURATION: 5000,
+        RESET_DELAY: 30000,
+    },
+    PAGINATION: {
+        DEFAULT_LIMIT: 500,
+        DEFAULT_PAGE: 1,
+    },
+} as const;

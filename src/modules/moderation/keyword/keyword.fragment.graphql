@@ -1,0 +1,10 @@
+fragment F_Keyword on T_Keyword {
+    id
+    isDel
+    createdAt
+    updatedAt
+    word
+    category
+    occurrences
+    isActive
+}

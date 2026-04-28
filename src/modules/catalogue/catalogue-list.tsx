@@ -1,0 +1,405 @@
+import type { ColumnDef } from '@tanstack/react-table';
+
+import {
+    Edit,
+    Grid3X3,
+    Image,
+    List,
+    Play,
+    Plus,
+    Trash2,
+    Video,
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useState } from 'react';
+
+import type { T_Catalogue } from '#shared/graphql';
+
+import { Badge, Button, Dialog, DialogContent, DialogHeader, DialogTitle, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '#shared/component';
+import { DataTable } from '#shared/component/data-table';
+import { E_CatalogueType, E_TagType } from '#shared/graphql';
+import { useTranslate } from '#shared/i18n';
+
+import type { I_CatalogueListProps } from './catalogue.type';
+
+import { useGetTags } from '../tag/tag.hook';
+import { CatalogueCard } from './catalogue-card';
+
+const UNDERSCORE_RE = /_/g;
+const IMAGE_FILE_RE = /\.(?:jpg|jpeg|png|gif|webp)$/i;
+const VIDEO_FILE_RE = /\.(?:mp4|webm|ogg)$/i;
+
+const catalogueTypeIcons = {
+    BOOTYCALL: <Image className="h-4 w-4" />,
+    PARTY: <Video className="h-4 w-4" />,
+    TRAVEL: <Play className="h-4 w-4" />,
+};
+
+const catalogueTypeGradients = {
+    BOOTYCALL: 'from-pink-400 via-red-400 to-pink-600',
+    PARTY: 'from-purple-400 via-violet-400 to-purple-600',
+    TRAVEL: 'from-blue-400 via-cyan-400 to-blue-600',
+};
+
+export function CatalogueList({
+    catalogues,
+    loading,
+    onEditCatalogue,
+    onCreateCatalogue,
+    onDeleteCatalogue,
+    totalDocs = 0,
+    page = 1,
+    pageSize = 10,
+    onPageChange,
+    onPageSizeChange,
+    search = '',
+    onSearchChange,
+    selectedType = 'ALL',
+    onTypeChange,
+}: I_CatalogueListProps) {
+    const { t } = useTranslate('catalogue');
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [selectedMedia, setSelectedMedia] = useState<T_Catalogue | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const { tags } = useGetTags({ isDel: false, type: E_TagType.CATALOGUE }, { pagination: false });
+
+    const catalogueTypeOptions = [
+        { value: 'ALL', label: t('all-types'), icon: <Image className="h-4 w-4" /> },
+        { value: 'BOOTYCALL', label: 'Bootycall', icon: <Image className="h-4 w-4" /> },
+        { value: 'PARTY', label: 'Party', icon: <Video className="h-4 w-4" /> },
+        { value: 'TRAVEL', label: 'Travel', icon: <Play className="h-4 w-4" /> },
+    ];
+
+    const tagOptions = [
+        { value: 'ALL', label: t('all-tags') },
+        ...tags.map(tag => ({
+            value: tag.id || '',
+            label: tag.name,
+        })),
+    ];
+
+    const handleMediaClick = (catalogue: T_Catalogue) => {
+        setSelectedMedia(catalogue);
+        setIsModalOpen(true);
+    };
+
+    const columns: ColumnDef<T_Catalogue>[] = [
+        {
+            accessorKey: 'type',
+            header: t('type'),
+            cell: ({ row }) => {
+                const type = row.getValue('type') as E_CatalogueType;
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className={`p-1 rounded bg-gradient-to-br ${catalogueTypeGradients[type] || 'from-gray-400 to-gray-600'}`}>
+                            {catalogueTypeIcons[type] || <Image className="h-3 w-3 text-white" />}
+                        </div>
+                        <span className="text-sm font-medium">{t(type?.toLowerCase() || 'unknown')}</span>
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: 'tag',
+            header: t('tag'),
+            cell: ({ row }) => {
+                const tag = row.original.tag;
+                return (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{tag?.name ?? 'Untagged'}</span>
+                        {tag?.type && (
+                            <Badge variant="outline" className="text-xs">
+                                {t(tag.type.toLowerCase().replace(UNDERSCORE_RE, '-'))}
+                            </Badge>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: 'url',
+            header: t('media'),
+            cell: ({ row }) => {
+                const catalogue = row.original;
+                const url = catalogue?.url;
+
+                if (!catalogue || !url) {
+                    return (
+                        <div className="w-16 h-12 bg-gray-100 dark:bg-gray-800 rounded border flex items-center justify-center">
+                            <span className="text-xs text-gray-400">No Media</span>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => handleMediaClick(catalogue)}
+                    >
+                        {catalogue.type === E_CatalogueType.BOOTYCALL && (
+                            <img
+                                src={url}
+                                alt={catalogue.tag?.name || 'Catalogue image'}
+                                className="w-16 h-12 object-cover rounded border"
+                            />
+                        )}
+                        {catalogue.type === E_CatalogueType.PARTY && (
+                            <video
+                                src={url}
+                                className="w-16 h-12 object-cover rounded border"
+                                controls
+                            />
+                        )}
+                        {catalogue.type === E_CatalogueType.TRAVEL && (
+                            <div className="w-16 h-12 bg-blue-100 dark:bg-blue-800 rounded border flex items-center justify-center">
+                                <Play className="h-6 w-6 text-blue-500" />
+                            </div>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: 'createdAt',
+            header: t('created-at'),
+            cell: ({ row }) => {
+                const date = new Date(row.getValue('createdAt'));
+                return <span className="text-sm text-gray-600 dark:text-gray-400">{date.toLocaleString()}</span>;
+            },
+        },
+        {
+            accessorKey: 'updatedAt',
+            header: t('updated-at'),
+            cell: ({ row }) => {
+                const date = new Date(row.getValue('updatedAt'));
+                return <span className="text-sm text-gray-600 dark:text-gray-400">{date.toLocaleString()}</span>;
+            },
+        },
+        {
+            id: 'actions',
+            header: t('actions'),
+            cell: ({ row }) => {
+                const catalogue = row.original;
+                return (
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => onEditCatalogue?.(catalogue)}
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                        >
+                            <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                            onClick={() => onDeleteCatalogue?.(catalogue)}
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </Button>
+                    </div>
+                );
+            },
+        },
+    ];
+
+    const filteredCatalogues = catalogues.filter((catalogue) => {
+        const matchesSearch = !search || search === 'ALL' || catalogue.tagId === search;
+        const matchesType = selectedType === 'ALL' || catalogue.type === selectedType;
+        return matchesSearch && matchesType;
+    });
+
+    return (
+        <>
+            <div className="space-y-6">
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <Select value={selectedType} onValueChange={onTypeChange}>
+                        <SelectTrigger className="w-full sm:w-48">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {catalogueTypeOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value}>
+                                    <div className="flex items-center gap-2">
+                                        {option.icon}
+                                        {option.label}
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <div className="flex-1">
+                        <Select value={search} onValueChange={onSearchChange}>
+                            <SelectTrigger className="h-12 text-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                <SelectValue placeholder={t('select-tag')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {tagOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant={viewMode === 'grid' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setViewMode('grid')}
+                            className="h-10 w-10 p-0"
+                        >
+                            <Grid3X3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant={viewMode === 'table' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setViewMode('table')}
+                            className="h-10 w-10 p-0"
+                        >
+                            <List className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Content */}
+                {loading
+                    ? (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+                            </div>
+                        )
+                    : viewMode === 'grid'
+                        ? (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                        <AnimatePresence>
+                                            {filteredCatalogues.map((catalogue, index) => (
+                                                <motion.div
+                                                    key={catalogue.id}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -20 }}
+                                                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                                                >
+                                                    <CatalogueCard
+                                                        catalogue={catalogue}
+                                                        onEdit={onEditCatalogue}
+                                                        onDelete={onDeleteCatalogue}
+                                                        t={t}
+                                                    />
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
+                                    {filteredCatalogues.length === 0 && (
+                                        <div className="text-center py-12">
+                                            <Image className="mx-auto h-12 w-12 text-gray-400" />
+                                            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{t('no-catalogues')}</h3>
+                                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('no-catalogues-description')}</p>
+                                        </div>
+                                    )}
+                                </>
+                            )
+                        : (
+                                <DataTable
+                                    columns={columns}
+                                    data={filteredCatalogues}
+                                />
+                            )}
+                {/* Pagination */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/90 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl border border-white/30 dark:border-gray-600/50 shadow-xl"
+                >
+                    {totalDocs > 0
+                        ? (
+                                <Pagination
+                                    total={totalDocs}
+                                    page={page}
+                                    limit={pageSize}
+                                    onPageChange={onPageChange}
+                                    onLimitChange={onPageSizeChange}
+                                    hasNextPage={page * pageSize < totalDocs}
+                                    hasPrevPage={page > 1}
+                                    totalPages={Math.ceil(totalDocs / pageSize)}
+                                    className="border-0 bg-transparent"
+                                />
+                            )
+                        : (
+                                <div className="flex items-center justify-between p-4">
+                                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                                        Showing
+                                        {' '}
+                                        {filteredCatalogues.length}
+                                        {' '}
+                                        catalogues
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                        Pagination data not available
+                                    </div>
+                                </div>
+                            )}
+                </motion.div>
+                {/* Floating Create Button */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="fixed bottom-6 right-6 z-50"
+                >
+                    <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                    >
+                        <Button
+                            onClick={onCreateCatalogue}
+                            className="h-14 w-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-2xl hover:shadow-3xl transition-all duration-300"
+                        >
+                            <Plus className="h-6 w-6" />
+                        </Button>
+                    </motion.div>
+                </motion.div>
+            </div>
+
+            {/* Media Preview Modal */}
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden">
+                    <DialogHeader>
+                        <DialogTitle className="text-center">
+                            {selectedMedia?.tag?.name ?? t('untagged')}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-4 justify-center items-center">
+                        {/* Show image if url ends with image extension */}
+                        {selectedMedia?.url && IMAGE_FILE_RE.test(selectedMedia.url) && (
+                            <img
+                                src={selectedMedia.url}
+                                alt={selectedMedia.tag?.name || 'Catalogue image'}
+                                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                            />
+                        )}
+                        {/* Show video if url ends with video extension */}
+                        {selectedMedia?.url && VIDEO_FILE_RE.test(selectedMedia.url) && (
+                            <video
+                                src={selectedMedia.url}
+                                controls
+                                autoPlay
+                                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                            />
+                        )}
+                        {/* Fallback if no media */}
+                        {!selectedMedia?.url && (
+                            <div className="w-full h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-400">
+                                {t('no-media')}
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}

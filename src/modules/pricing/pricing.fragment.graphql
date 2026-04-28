@@ -1,0 +1,22 @@
+fragment F_Pricing on T_Pricing {
+    id
+    isDel
+    createdAt
+    updatedAt
+    type
+    countryId
+    country {
+        ...F_Country
+    }
+    stateId
+    state {
+        ...F_State
+    }
+    price
+    taxRate
+    isActive
+    currencyId
+    currency {
+        ...F_Currency
+    }
+}

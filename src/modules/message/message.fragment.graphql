@@ -1,0 +1,74 @@
+fragment F_MessageContent on T_MessageContent {
+    type
+    value
+    contactAdmin {
+        ...F_ContactAdmin
+    }
+}
+
+fragment F_Message on T_Message {
+    id
+    isDel
+    createdAt
+    updatedAt
+    senderId
+    sender {
+        ...F_User
+    }
+    content {
+        ...F_MessageContent
+    }
+    conversationId
+    parentId
+    parent {
+        id
+        content {
+            ...F_MessageContent
+        }
+        sender {
+            ...F_User
+        }
+    }
+}
+
+fragment F_ContactAdmin on T_ContactAdmin {
+    topic
+    username
+    email
+    requestType
+    device
+    message
+    image
+    paymentDate
+    transactionId
+    profileLink
+    companyName
+}
+
+fragment F_Conversation on T_Conversation {
+    id
+    isDel
+    createdAt
+    updatedAt
+    type
+    name
+    createdById
+    createdBy {
+        ...F_User
+    }
+    lastMessageId
+    lastMessage {
+        ...F_Message
+    }
+    entityId
+    status
+    category
+    resolvedAt
+    resolvedById
+    resolvedBy {
+        id
+        username
+    }
+    lastReadByAdminAt
+    notes
+}

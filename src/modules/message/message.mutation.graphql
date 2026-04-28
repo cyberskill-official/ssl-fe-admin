@@ -1,0 +1,44 @@
+mutation UpdateConversationStatus(
+    $conversationId: String!
+    $status: E_ConversationStatus
+    $category: E_ConversationCategory
+    $notes: String
+) {
+    updateConversationStatus(conversationId: $conversationId, status: $status, category: $category, notes: $notes) {
+        success
+        message
+        result {
+            ...F_Conversation
+        }
+    }
+}
+
+mutation MarkConversationAsRead($conversationId: String!) {
+    markConversationAsRead(conversationId: $conversationId) {
+        success
+        message
+        result {
+            ...F_Conversation
+        }
+    }
+}
+
+mutation ResolveConversation($conversationId: String!, $notes: String) {
+    resolveConversation(conversationId: $conversationId, notes: $notes) {
+        success
+        message
+        result {
+            ...F_Conversation
+        }
+    }
+}
+
+mutation ArchiveConversation($conversationId: String!) {
+    archiveConversation(conversationId: $conversationId) {
+        success
+        message
+        result {
+            ...F_Conversation
+        }
+    }
+}

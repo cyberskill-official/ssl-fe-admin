@@ -1,0 +1,21 @@
+fragment F_Gallery on T_Gallery {
+    id
+    isDel
+    createdAt
+    updatedAt
+    moderationMediaId
+    moderationMedia {
+        ...F_ModerationMedia
+    }
+    type
+    url
+    uploadedById
+    likes {
+        id
+    }
+    views {
+        id
+    }
+    status
+    isPublished
+}

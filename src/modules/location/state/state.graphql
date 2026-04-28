@@ -1,0 +1,32 @@
+query getStates($filter: Input_QueryState, $options: JSON) {
+    getStates(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_State
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getState($filter: Input_QueryState!) {
+    getState(filter: $filter) {
+        success
+        message
+        result {
+            ...F_State
+        }
+    }
+}

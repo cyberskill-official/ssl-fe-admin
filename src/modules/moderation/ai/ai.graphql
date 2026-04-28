@@ -1,0 +1,121 @@
+mutation moderateText($text: String!) {
+    moderateText(text: $text) {
+        success
+        message
+        result {
+            output {
+                category
+                decision
+                score
+            }
+            reasons
+            decision
+            language
+        }
+    }
+}
+
+mutation moderateImage($imageUrl: String!) {
+    moderateImage(imageUrl: $imageUrl) {
+        success
+        message
+        result {
+            confidence
+            decision
+            riskLevel
+            reasons
+            textDetection {
+                detectedText
+            }
+            contextLabels {
+                name
+                confidence
+                timestampMs
+            }
+        }
+    }
+}
+
+mutation moderateVideo($videoUrl: String!) {
+    moderateVideo(videoUrl: $videoUrl) {
+        success
+        message
+        result {
+            confidence
+            decision
+            riskLevel
+            reasons
+            textDetection {
+                detectedText
+            }
+            contextLabels {
+                name
+                confidence
+                timestampMs
+            }
+        }
+    }
+}
+
+query getModerationLog($filter: Input_QueryModerationLog!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getModerationLog(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_ModerationLog
+        }
+    }
+}
+
+query getModerationLogs($filter: Input_QueryModerationLog, $options: JSON) {
+    getModerationLogs(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_ModerationLog
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createModerationLog($doc: Input_CreateModerationLog!) {
+    createModerationLog(doc: $doc) {
+        success
+        message
+        result {
+            ...F_ModerationLog
+        }
+    }
+}
+
+mutation updateModerationLog($filter: Input_QueryModerationLog!, $update: Input_UpdateModerationLog!, $options: JSON) {
+    updateModerationLog(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_ModerationLog
+        }
+    }
+}
+
+mutation deleteModerationLog($filter: Input_QueryModerationLog!, $options: JSON) {
+    deleteModerationLog(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_ModerationLog
+        }
+    }
+}

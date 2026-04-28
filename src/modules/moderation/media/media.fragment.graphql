@@ -1,0 +1,27 @@
+fragment F_ModerationMedia on T_ModerationMedia {
+    id
+    isDel
+    createdAt
+    ipAddress
+    updatedAt
+    type
+    uploadedById
+    uploadedBy {
+        ...F_UserInfo
+    }
+    url
+    status
+    moderatedById
+    reason
+    notes {
+        ...F_Note
+    }
+    tagId
+    tag {
+        ...F_Tag
+    }
+    isPublished
+    moderationLogs {
+        ...F_ModerationLog
+    }
+}

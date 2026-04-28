@@ -1,0 +1,62 @@
+query getBlog($filter: Input_QueryBlog!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getBlog(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_Blog
+        }
+    }
+}
+
+query getBlogs($filter: Input_QueryBlog, $options: JSON) {
+    getBlogs(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_Blog
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createBlog($doc: Input_CreateBlog!) {
+    createBlog(doc: $doc) {
+        success
+        message
+        result {
+            ...F_Blog
+        }
+    }
+}
+
+mutation updateBlog($filter: Input_QueryBlog!, $update: Input_UpdateBlog!, $options: JSON) {
+    updateBlog(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_Blog
+        }
+    }
+}
+
+mutation deleteBlog($filter: Input_QueryBlog!, $options: JSON) {
+    deleteBlog(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_Blog
+        }
+    }
+}

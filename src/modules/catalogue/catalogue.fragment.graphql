@@ -1,0 +1,14 @@
+#import "../tag/tag.fragment.graphql"
+
+fragment F_Catalogue on T_Catalogue {
+    id
+    isDel
+    createdAt
+    updatedAt
+    type
+    tagId
+    tag {
+        ...F_Tag
+    }
+    url
+}

@@ -1,0 +1,26 @@
+fragment F_Advertisement on T_Advertisement {
+    id
+    name
+    description
+    image
+    targetURL
+    slot
+    placementType
+    placementId
+    placementDestination {
+        id
+        name
+    }
+    placementBlog {
+        id
+        title
+    }
+    startDate
+    endDate
+    clickCount
+    isActive
+    createdById
+    createdBy {
+        ...F_User
+    }
+}

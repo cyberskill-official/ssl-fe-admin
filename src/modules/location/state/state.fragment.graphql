@@ -1,0 +1,15 @@
+fragment F_State on T_State {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    countryId
+    country {
+        ...F_Country
+    }
+    code
+    type
+    latitude
+    longitude
+}

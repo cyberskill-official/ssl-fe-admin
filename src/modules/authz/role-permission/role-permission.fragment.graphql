@@ -1,0 +1,14 @@
+fragment F_RolePermission on T_RolePermission {
+    id
+    isDel
+    createdAt
+    updatedAt
+    roleId
+    role {
+        ...F_Role
+    }
+    permissionId
+    permission {
+        ...F_Permission
+    }
+}

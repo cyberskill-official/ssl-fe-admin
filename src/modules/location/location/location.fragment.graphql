@@ -1,0 +1,35 @@
+fragment F_Map on T_Map {
+    latitude
+    longitude
+}
+
+fragment F_Location on T_Location {
+    regionId
+    region {
+        ...F_Region
+    }
+    subRegionId
+    subRegion {
+        ...F_SubRegion
+    }
+    countryId
+    country {
+        ...F_Country
+    }
+    stateId
+    state {
+        ...F_State
+    }
+    cityId
+    city {
+        ...F_City
+    }
+    address
+    map {
+        latitude
+        longitude
+    }
+    pinStyle
+    entityType
+    entityId
+}

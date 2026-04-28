@@ -1,0 +1,18 @@
+mutation approveAgeVerify($userId: String!) {
+    approveAgeVerify(userId: $userId) {
+        success
+        message
+        result {
+            ...F_User
+        }
+    }
+}
+mutation rejectAgeVerify($userId: String!, $reason: String!) {
+    rejectAgeVerify(userId: $userId, reason: $reason) {
+        success
+        message
+        result {
+            ...F_User
+        }
+    }
+}

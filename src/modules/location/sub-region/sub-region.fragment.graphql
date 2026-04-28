@@ -1,0 +1,12 @@
+fragment F_SubRegion on T_SubRegion {
+    id
+    isDel
+    createdAt
+    updatedAt
+    name
+    regionId
+    region {
+        ...F_Region
+    }
+    wikiDataId
+}

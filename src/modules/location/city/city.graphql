@@ -1,0 +1,22 @@
+query getCities($filter: Input_QueryCity, $options: JSON) {
+    getCities(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_City
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}

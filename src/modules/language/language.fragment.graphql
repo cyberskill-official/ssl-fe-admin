@@ -1,0 +1,9 @@
+fragment F_Language on T_Language {
+    id
+    isDel
+    createdAt
+    updatedAt
+    code
+    name
+    native
+}

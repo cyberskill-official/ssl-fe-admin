@@ -1,0 +1,11 @@
+fragment F_EmailTemplate on T_EmailTemplate {
+    id
+    isDel
+    createdAt
+    updatedAt
+    templateKey
+    name
+    subject
+    content
+    variables
+}

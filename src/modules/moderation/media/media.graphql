@@ -1,0 +1,86 @@
+query getModerationMedia($filter: Input_QueryModerationMedia!, $projection: JSON, $options: JSON, $populate: JSON) {
+    getModerationMedia(filter: $filter, projection: $projection, options: $options, populate: $populate) {
+        success
+        message
+        result {
+            ...F_ModerationMedia
+        }
+    }
+}
+
+query getModerationMedias($filter: Input_QueryModerationMedia, $options: JSON) {
+    getModerationMedias(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_ModerationMedia
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+mutation createModerationMedia($doc: Input_CreateModerationMedia!) {
+    createModerationMedia(doc: $doc) {
+        success
+        message
+        result {
+            ...F_ModerationMedia
+        }
+    }
+}
+
+mutation updateModerationMedia(
+    $filter: Input_QueryModerationMedia!
+    $update: Input_UpdateModerationMedia!
+    $options: JSON
+) {
+    updateModerationMedia(filter: $filter, update: $update, options: $options) {
+        success
+        message
+        result {
+            ...F_ModerationMedia
+        }
+    }
+}
+
+mutation deleteModerationMedia($filter: Input_QueryModerationMedia!, $options: JSON) {
+    deleteModerationMedia(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_ModerationMedia
+        }
+    }
+}
+
+mutation approveModerationMedia($id: String!) {
+    approveModerationMedia(id: $id) {
+        success
+        message
+        result {
+            ...F_ModerationMedia
+        }
+    }
+}
+
+mutation rejectModerationMedia($id: String!, $reason: String!) {
+    rejectModerationMedia(id: $id, reason: $reason) {
+        success
+        message
+        result {
+            ...F_ModerationMedia
+        }
+    }
+}

@@ -1,0 +1,7 @@
+.DS_Store
+.react-router
+build
+node_modules
+*.env
+*.tsbuildinfo
+.simple-git-hooks.json

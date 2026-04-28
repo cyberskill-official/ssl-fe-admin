@@ -1,0 +1,9 @@
+# Dashboard reuses existing APIs from other moderation modules
+# No custom queries needed:
+# - getModerationMedias (from media module) for pending images/videos count
+# - getKeywords (from keyword module) for keyword count
+# - getModerationLogs (from log module) for activities and reports
+
+type Query {
+    _dashboardPlaceholder: Boolean
+}

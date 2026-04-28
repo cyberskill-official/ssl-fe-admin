@@ -1,0 +1,4 @@
+fragment F_Rating on T_Rating {
+    rate
+    reason
+}
