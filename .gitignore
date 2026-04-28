@@ -5,3 +5,4 @@ node_modules
 *.env
 *.tsbuildinfo
 .simple-git-hooks.json
+.git.bak
