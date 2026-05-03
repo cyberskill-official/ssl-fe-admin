@@ -74,6 +74,7 @@ export default function ModerationDashboard() {
             action === 'deleted' && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
             action === 'warned' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
             action === 'age_verified' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+            action === 'blocked' && 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
             'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
         );
 
@@ -484,14 +485,15 @@ export default function ModerationDashboard() {
                         </div>
 
                         {/* Summary Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
                             {[
                                 { label: t('total-actions'), value: statsActionLoading ? '...' : actionStats.total, color: 'gray' },
                                 { label: t('approved'), value: statsActionLoading ? '...' : actionStats.approved, color: 'emerald' },
                                 { label: t('rejected'), value: statsActionLoading ? '...' : actionStats.rejected, color: 'red' },
                                 { label: t('suspended'), value: statsActionLoading ? '...' : actionStats.suspended, color: 'amber' },
                                 { label: t('warned'), value: statsActionLoading ? '...' : actionStats.warned, color: 'yellow' },
-                                { label: t('age-verified'), value: statsActionLoading ? '...' : actionStats.deleted, color: 'blue' },
+                                { label: t('deleted'), value: statsActionLoading ? '...' : actionStats.deleted, color: 'red' },
+                                { label: t('blocked'), value: statsActionLoading ? '...' : actionStats.blocked, color: 'gray' },
                             ].map((stat, index) => (
                                 <div
                                     key={stat.label}

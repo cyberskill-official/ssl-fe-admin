@@ -114,7 +114,16 @@ export function useRecentModerationActivities(limit = 10) {
         return (data?.getModerationLogs?.result?.docs || []).map((log: any) => ({
             id: log?.id || '',
             type: log?.moderationMedia?.type?.toLowerCase() || 'unknown',
-            action: log?.action?.toLowerCase() || 'unknown',
+            action: (() => {
+                const act = log?.action?.toLowerCase() || 'unknown';
+                if (act === 'block') return 'blocked';
+                if (act === 'warn') return 'warned';
+                if (act === 'suspend') return 'suspended';
+                if (act === 'approve') return 'approved';
+                if (act === 'reject') return 'rejected';
+                if (act === 'delete') return 'deleted';
+                return act;
+            })(),
             reason: log?.reason || '',
             timestamp: log?.createdAt || new Date().toISOString(),
             userId: log?.userId || '',
@@ -175,7 +184,16 @@ export function useMonthlyModerationReport(
                     minute: '2-digit',
                 }),
                 profileName: log?.user?.username || 'Unknown',
-                action: log?.action?.toLowerCase() || 'unknown',
+                action: (() => {
+                    const act = log?.action?.toLowerCase() || 'unknown';
+                    if (act === 'block') return 'blocked';
+                    if (act === 'warn') return 'warned';
+                    if (act === 'suspend') return 'suspended';
+                    if (act === 'approve') return 'approved';
+                    if (act === 'reject') return 'rejected';
+                    if (act === 'delete') return 'deleted';
+                    return act;
+                })(),
                 moderator: 'Admin',
                 reason: log?.reason || '',
                 contentType: log?.moderationMedia?.type?.toLowerCase() || 'unknown',
@@ -244,6 +262,10 @@ export function useModerationActionStats(month: number, year: number) {
             const action = l?.action?.toUpperCase();
             return action === 'WARNED' || action === 'WARN';
         }).length;
+        const blocked = filteredLogs.filter((l: any) => {
+            const action = l?.action?.toUpperCase();
+            return action === 'BLOCKED' || action === 'BLOCK';
+        }).length;
 
         return {
             approved,
@@ -251,7 +273,8 @@ export function useModerationActionStats(month: number, year: number) {
             suspended,
             deleted,
             warned,
-            total: approved + rejected + suspended + deleted + warned,
+            blocked,
+            total: approved + rejected + suspended + deleted + warned + blocked,
         };
     }, [data, month, year]);
 
