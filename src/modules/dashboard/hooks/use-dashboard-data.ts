@@ -6,7 +6,7 @@ import { useSmartPolling } from '#shared/hooks';
 import { useGetAdvertisements } from '../../advertisement/advertisement.hook';
 import { useGetBlogs } from '../../blog/blog.hook';
 import { useGetDestinations } from '../../destination/destination.hook';
-import { useGetBlocks, useGetUsers } from '../../user/user.hook';
+import { useGetUsers } from '../../user/user.hook';
 import { DASHBOARD_CONSTANTS } from '../dashboard.constants';
 
 export function useDashboardData() {
@@ -34,10 +34,10 @@ export function useDashboardData() {
         { page: 1, limit: 50, sort: { createdAt: -1 } },
     );
 
-    // Count paid/promo users client-side from populated roles (same as User List page)
-    const { paidUsersCount, promoUsersCount } = useMemo(() => {
+    const { paidUsersCount, promoUsersCount, blockedUsersCount } = useMemo(() => {
         let paid = 0;
         let promo = 0;
+        let blocked = 0;
         for (const user of allUsers) {
             const hasPaid = user?.roles?.some(role => role?.name === 'PAID_MEMBER');
             const hasPromo = user?.roles?.some(role => role?.name === 'PROMO_MEMBER');
@@ -45,8 +45,10 @@ export function useDashboardData() {
                 paid++;
             if (hasPromo)
                 promo++;
+            if (user?.isAdminBlocked)
+                blocked++;
         }
-        return { paidUsersCount: paid, promoUsersCount: promo };
+        return { paidUsersCount: paid, promoUsersCount: promo, blockedUsersCount: blocked };
     }, [allUsers]);
 
     const usersLoading = allUsersLoading || recentUsersLoading;
@@ -66,7 +68,6 @@ export function useDashboardData() {
         { page: DASHBOARD_CONSTANTS.PAGINATION.DEFAULT_PAGE, limit: DASHBOARD_CONSTANTS.PAGINATION.DEFAULT_LIMIT },
     );
 
-    const { blocks, loading: blocksLoading } = useGetBlocks();
 
     useSmartPolling(() => {
         refetchAllUsers?.();
@@ -162,7 +163,6 @@ export function useDashboardData() {
         const totalPayingUsers = paidUsers + promoUsers;
         const freeUsers = totalUsers - totalPayingUsers;
         const activeAds = activeAdsCount;
-        const blockedUsersCount = blocks.length;
 
         return [
             {
@@ -225,7 +225,7 @@ export function useDashboardData() {
                 id: '5',
                 title: 'Total Users',
                 value: totalUsers.toLocaleString(),
-                change: blocksLoading || usersLoading ? '...' : `${blockedUsersCount} blocked`,
+                change: usersLoading ? '...' : `${blockedUsersCount} blocked`,
                 subtitle: 'Total registered users',
                 icon: Users,
                 color: 'text-amber-600',
@@ -278,7 +278,7 @@ export function useDashboardData() {
                 percentage: totalUsers > 0 ? (totalPayingUsers / totalUsers) * 100 : 0,
             },
         ];
-    }, [paidUsersCount, promoUsersCount, totalUsers, activeAdsCount, totalAds, totalBlogs, totalDestinations, blocks, usersLoading, adsLoading, blogsLoading, destinationsLoading, blocksLoading]);
+    }, [paidUsersCount, promoUsersCount, blockedUsersCount, totalUsers, activeAdsCount, totalAds, totalBlogs, totalDestinations, usersLoading, adsLoading, blogsLoading, destinationsLoading]);
 
     const tasks = useMemo(() => {
         const now = new Date();
