@@ -21,9 +21,7 @@ import {
     GetModerationLogsDocument,
     getModerationMediasDocument,
     getUsersDocument,
-    getBlocksDocument,
 } from '#shared/graphql';
-import type { getBlocksQuery, getBlocksQueryVariables } from '#shared/graphql';
 import { useTranslate } from '#shared/i18n';
 
 /**
@@ -113,10 +111,10 @@ export function useRecentModerationActivities(limit = 10) {
     });
 
     const { data: blocksData, loading: blocksLoading } = useQuery<
-        getBlocksQuery,
-        getBlocksQueryVariables
-    >(getBlocksDocument, {
-        variables: { options: { limit, sort: { createdAt: -1 }, populate: ['user', 'block'] } },
+        getUsersQuery,
+        getUsersQueryVariables
+    >(getUsersDocument, {
+        variables: { filter: { isAdminBlocked: true }, options: { limit, sort: { updatedAt: -1 } } },
         fetchPolicy: 'network-only',
         pollInterval: 15000,
     });
@@ -141,14 +139,14 @@ export function useRecentModerationActivities(limit = 10) {
             username: log?.user?.username || 'Unknown User',
         }));
 
-        const blocksActivities = (blocksData?.getBlocks?.result?.docs || []).map((block: any) => ({
-            id: block?.id || '',
+        const blocksActivities = (blocksData?.getUsers?.result?.docs || []).map((user: any) => ({
+            id: user?.id || '',
             type: 'user',
             action: 'blocked',
             reason: '',
-            timestamp: block?.createdAt || new Date().toISOString(),
-            userId: block?.block?.id || '',
-            username: block?.block?.username || 'Unknown User',
+            timestamp: user?.updatedAt || new Date().toISOString(),
+            userId: user?.id || '',
+            username: user?.username || 'Unknown User',
         }));
 
         const allActivities = [...logsActivities, ...blocksActivities].sort(
@@ -192,16 +190,16 @@ export function useMonthlyModerationReport(
     });
 
     const { data: blocksData, loading: blocksLoading } = useQuery<
-        getBlocksQuery,
-        getBlocksQueryVariables
-    >(getBlocksDocument, {
-        variables: { options: { limit: 1000, sort: { createdAt: -1 }, populate: ['user', 'block'] } },
+        getUsersQuery,
+        getUsersQueryVariables
+    >(getUsersDocument, {
+        variables: { filter: { isAdminBlocked: true }, options: { limit: 1000, sort: { updatedAt: -1 } } },
         fetchPolicy: 'network-only',
     });
 
     const report = useMemo(() => {
         const logs = data?.getModerationLogs?.result?.docs || [];
-        const blocks = blocksData?.getBlocks?.result?.docs || [];
+        const blocks = blocksData?.getUsers?.result?.docs || [];
 
         // Filter by month/year client-side
         const filteredLogs = logs.filter((log: any) => {
@@ -211,9 +209,9 @@ export function useMonthlyModerationReport(
             return logDate.getMonth() === month && logDate.getFullYear() === year;
         });
 
-        const filteredBlocks = blocks.filter((block: any) => {
-            if (!block?.createdAt) return false;
-            const blockDate = new Date(block.createdAt);
+        const filteredBlocks = blocks.filter((user: any) => {
+            if (!user?.updatedAt) return false;
+            const blockDate = new Date(user.updatedAt);
             return blockDate.getMonth() === month && blockDate.getFullYear() === year;
         });
 
@@ -240,16 +238,16 @@ export function useMonthlyModerationReport(
             contentType: log?.moderationMedia?.type?.toLowerCase() || 'unknown',
         }));
 
-        const blockActions = filteredBlocks.map((block: any) => ({
-            id: block?.id || '',
-            date: block?.createdAt || '',
-            time: new Date(block?.createdAt || '').toLocaleTimeString('en-US', {
+        const blockActions = filteredBlocks.map((user: any) => ({
+            id: user?.id || '',
+            date: user?.updatedAt || '',
+            time: new Date(user?.updatedAt || '').toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
             }),
-            profileName: block?.block?.username || 'Unknown',
+            profileName: user?.username || 'Unknown',
             action: 'blocked',
-            moderator: block?.user?.username || 'Admin',
+            moderator: 'Admin',
             reason: '',
             contentType: 'profile',
         }));
@@ -294,16 +292,16 @@ export function useModerationActionStats(month: number, year: number) {
     });
 
     const { data: blocksData, loading: blocksLoading } = useQuery<
-        getBlocksQuery,
-        getBlocksQueryVariables
-    >(getBlocksDocument, {
-        variables: { options: { limit: 1000, sort: { createdAt: -1 } } },
+        getUsersQuery,
+        getUsersQueryVariables
+    >(getUsersDocument, {
+        variables: { filter: { isAdminBlocked: true }, options: { limit: 1000, sort: { updatedAt: -1 } } },
         fetchPolicy: 'network-only',
     });
 
     const actionStats = useMemo(() => {
         const logs = data?.getModerationLogs?.result?.docs || [];
-        const blocks = blocksData?.getBlocks?.result?.docs || [];
+        const blocks = blocksData?.getUsers?.result?.docs || [];
 
         // Filter by month/year
         const filteredLogs = logs.filter((log: any) => {
@@ -313,9 +311,9 @@ export function useModerationActionStats(month: number, year: number) {
             return logDate.getMonth() === month && logDate.getFullYear() === year;
         });
 
-        const filteredBlocks = blocks.filter((block: any) => {
-            if (!block?.createdAt) return false;
-            const blockDate = new Date(block.createdAt);
+        const filteredBlocks = blocks.filter((user: any) => {
+            if (!user?.updatedAt) return false;
+            const blockDate = new Date(user.updatedAt);
             return blockDate.getMonth() === month && blockDate.getFullYear() === year;
         });
 
