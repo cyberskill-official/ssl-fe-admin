@@ -1,4 +1,4 @@
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { Document, Page, PDFDownloadLink, Text } from '@react-pdf/renderer';
 import { Activity, AlertTriangle, BrainCircuit, Calendar, Download, Flag, Image, Shield, Target, Trash2, UserCheck, Users, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
@@ -74,6 +74,7 @@ export default function ModerationDashboard() {
             action === 'deleted' && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
             action === 'warned' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
             action === 'age_verified' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+            action === 'blocked' && 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
             'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
         );
 
@@ -100,7 +101,7 @@ export default function ModerationDashboard() {
     };
 
     // Use report data from API
-    const filteredActions = report.actions;
+    const filteredActions = report.actions as unknown as I_ModerationAction[];
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
@@ -473,7 +474,13 @@ export default function ModerationDashboard() {
                                     </select>
                                 </div>
                                 <PDFDownloadLink
-                                    document={<div>{t('moderation-report-placeholder')}</div>}
+                                    document={(
+                                        <Document>
+                                            <Page>
+                                                <Text>{t('moderation-report-placeholder')}</Text>
+                                            </Page>
+                                        </Document>
+                                    )}
                                     fileName={`${t('moderation-report')}-${months[selectedMonth]?.toLowerCase() ?? ''}-${selectedYear}.pdf`}
                                     className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                                 >
@@ -484,14 +491,15 @@ export default function ModerationDashboard() {
                         </div>
 
                         {/* Summary Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
                             {[
                                 { label: t('total-actions'), value: statsActionLoading ? '...' : actionStats.total, color: 'gray' },
                                 { label: t('approved'), value: statsActionLoading ? '...' : actionStats.approved, color: 'emerald' },
                                 { label: t('rejected'), value: statsActionLoading ? '...' : actionStats.rejected, color: 'red' },
                                 { label: t('suspended'), value: statsActionLoading ? '...' : actionStats.suspended, color: 'amber' },
                                 { label: t('warned'), value: statsActionLoading ? '...' : actionStats.warned, color: 'yellow' },
-                                { label: t('age-verified'), value: statsActionLoading ? '...' : actionStats.deleted, color: 'blue' },
+                                { label: t('deleted'), value: statsActionLoading ? '...' : actionStats.deleted, color: 'red' },
+                                { label: t('blocked'), value: statsActionLoading ? '...' : actionStats.blocked, color: 'gray' },
                             ].map((stat, index) => (
                                 <div
                                     key={stat.label}
@@ -581,7 +589,7 @@ export default function ModerationDashboard() {
                                                             <div className="flex items-center">
                                                                 {_getContentTypeIcon(action.contentType)}
                                                                 <span className="ml-2 text-sm font-medium capitalize text-gray-900 dark:text-white">
-                                                                    {t(action.contentType.replace('_', '-'))}
+                                                                    {t((action.contentType || '').replace('_', '-'))}
                                                                 </span>
                                                             </div>
                                                         </td>

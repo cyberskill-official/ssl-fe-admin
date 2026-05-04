@@ -110,21 +110,55 @@ export function useRecentModerationActivities(limit = 10) {
         pollInterval: 15000,
     });
 
+    const { data: blocksData, loading: blocksLoading } = useQuery<
+        getUsersQuery,
+        getUsersQueryVariables
+    >(getUsersDocument, {
+        variables: { filter: { isAdminBlocked: true }, options: { limit, sort: { updatedAt: -1 } } },
+        fetchPolicy: 'network-only',
+        pollInterval: 15000,
+    });
+
     const activities = useMemo(() => {
-        return (data?.getModerationLogs?.result?.docs || []).map((log: any) => ({
+        const logsActivities = (data?.getModerationLogs?.result?.docs || []).map((log: any) => ({
             id: log?.id || '',
             type: log?.moderationMedia?.type?.toLowerCase() || 'unknown',
-            action: log?.action?.toLowerCase() || 'unknown',
+            action: (() => {
+                const act = log?.action?.toLowerCase() || 'unknown';
+                if (act === 'block') return 'blocked';
+                if (act === 'warn') return 'warned';
+                if (act === 'suspend') return 'suspended';
+                if (act === 'approve') return 'approved';
+                if (act === 'reject') return 'rejected';
+                if (act === 'delete') return 'deleted';
+                return act;
+            })(),
             reason: log?.reason || '',
             timestamp: log?.createdAt || new Date().toISOString(),
             userId: log?.userId || '',
             username: log?.user?.username || 'Unknown User',
         }));
-    }, [data]);
+
+        const blocksActivities = (blocksData?.getUsers?.result?.docs || []).map((user: any) => ({
+            id: user?.id || '',
+            type: 'user',
+            action: 'blocked',
+            reason: '',
+            timestamp: user?.updatedAt || new Date().toISOString(),
+            userId: user?.id || '',
+            username: user?.username || 'Unknown User',
+        }));
+
+        const allActivities = [...logsActivities, ...blocksActivities].sort(
+            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+
+        return allActivities.slice(0, limit);
+    }, [data, blocksData, limit]);
 
     return {
         activities,
-        loading,
+        loading: loading || blocksLoading,
         refetch,
     };
 }
@@ -155,8 +189,17 @@ export function useMonthlyModerationReport(
         fetchPolicy: 'network-only',
     });
 
+    const { data: blocksData, loading: blocksLoading } = useQuery<
+        getUsersQuery,
+        getUsersQueryVariables
+    >(getUsersDocument, {
+        variables: { filter: { isAdminBlocked: true }, options: { limit: 1000, sort: { updatedAt: -1 } } },
+        fetchPolicy: 'network-only',
+    });
+
     const report = useMemo(() => {
         const logs = data?.getModerationLogs?.result?.docs || [];
+        const blocks = blocksData?.getUsers?.result?.docs || [];
 
         // Filter by month/year client-side
         const filteredLogs = logs.filter((log: any) => {
@@ -166,31 +209,66 @@ export function useMonthlyModerationReport(
             return logDate.getMonth() === month && logDate.getFullYear() === year;
         });
 
+        const filteredBlocks = blocks.filter((user: any) => {
+            if (!user?.updatedAt) return false;
+            const blockDate = new Date(user.updatedAt);
+            return blockDate.getMonth() === month && blockDate.getFullYear() === year;
+        });
+
+        const logActions = filteredLogs.map((log: any) => ({
+            id: log?.id || '',
+            date: log?.createdAt || '',
+            time: new Date(log?.createdAt || '').toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+            profileName: log?.user?.username || 'Unknown',
+            action: (() => {
+                const act = log?.action?.toLowerCase() || 'unknown';
+                if (act === 'block') return 'blocked';
+                if (act === 'warn') return 'warned';
+                if (act === 'suspend') return 'suspended';
+                if (act === 'approve') return 'approved';
+                if (act === 'reject') return 'rejected';
+                if (act === 'delete') return 'deleted';
+                return act;
+            })(),
+            moderator: 'Admin',
+            reason: log?.reason || '',
+            contentType: log?.moderationMedia?.type?.toLowerCase() || 'unknown',
+        }));
+
+        const blockActions = filteredBlocks.map((user: any) => ({
+            id: user?.id || '',
+            date: user?.updatedAt || '',
+            time: new Date(user?.updatedAt || '').toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+            profileName: user?.username || 'Unknown',
+            action: 'blocked',
+            moderator: 'Admin',
+            reason: '',
+            contentType: 'profile',
+        }));
+
+        const allActions = [...logActions, ...blockActions].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
         return {
-            actions: filteredLogs.map((log: any) => ({
-                id: log?.id || '',
-                date: log?.createdAt || '',
-                time: new Date(log?.createdAt || '').toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                }),
-                profileName: log?.user?.username || 'Unknown',
-                action: log?.action?.toLowerCase() || 'unknown',
-                moderator: 'Admin',
-                reason: log?.reason || '',
-                contentType: log?.moderationMedia?.type?.toLowerCase() || 'unknown',
-            })),
-            totalDocs: filteredLogs.length,
+            actions: allActions,
+            totalDocs: allActions.length,
             totalPages: 1,
             currentPage: 1,
             hasNextPage: false,
             hasPrevPage: false,
         };
-    }, [data, month, year]);
+    }, [data, blocksData, month, year]);
 
     return {
         report,
-        loading,
+        loading: loading || blocksLoading,
         refetch,
     };
 }
@@ -213,8 +291,17 @@ export function useModerationActionStats(month: number, year: number) {
         fetchPolicy: 'network-only',
     });
 
+    const { data: blocksData, loading: blocksLoading } = useQuery<
+        getUsersQuery,
+        getUsersQueryVariables
+    >(getUsersDocument, {
+        variables: { filter: { isAdminBlocked: true }, options: { limit: 1000, sort: { updatedAt: -1 } } },
+        fetchPolicy: 'network-only',
+    });
+
     const actionStats = useMemo(() => {
         const logs = data?.getModerationLogs?.result?.docs || [];
+        const blocks = blocksData?.getUsers?.result?.docs || [];
 
         // Filter by month/year
         const filteredLogs = logs.filter((log: any) => {
@@ -222,6 +309,12 @@ export function useModerationActionStats(month: number, year: number) {
                 return false;
             const logDate = new Date(log.createdAt);
             return logDate.getMonth() === month && logDate.getFullYear() === year;
+        });
+
+        const filteredBlocks = blocks.filter((user: any) => {
+            if (!user?.updatedAt) return false;
+            const blockDate = new Date(user.updatedAt);
+            return blockDate.getMonth() === month && blockDate.getFullYear() === year;
         });
 
         const approved = filteredLogs.filter((l: any) => {
@@ -244,6 +337,10 @@ export function useModerationActionStats(month: number, year: number) {
             const action = l?.action?.toUpperCase();
             return action === 'WARNED' || action === 'WARN';
         }).length;
+        const blocked = filteredLogs.filter((l: any) => {
+            const action = l?.action?.toUpperCase();
+            return action === 'BLOCKED' || action === 'BLOCK';
+        }).length + filteredBlocks.length;
 
         return {
             approved,
@@ -251,13 +348,14 @@ export function useModerationActionStats(month: number, year: number) {
             suspended,
             deleted,
             warned,
-            total: approved + rejected + suspended + deleted + warned,
+            blocked,
+            total: approved + rejected + suspended + deleted + warned + blocked,
         };
-    }, [data, month, year]);
+    }, [data, blocksData, month, year]);
 
     return {
         actionStats,
-        loading,
+        loading: loading || blocksLoading,
     };
 }
 

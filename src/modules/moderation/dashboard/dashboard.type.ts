@@ -3,7 +3,7 @@ export interface I_ModerationAction {
     date: string;
     time: string;
     profileName: string;
-    action: 'approved' | 'rejected' | 'suspended' | 'deleted' | 'warned' | 'age_verified';
+    action: 'approved' | 'rejected' | 'suspended' | 'deleted' | 'warned' | 'age_verified' | 'blocked';
     moderator: string;
     reason?: string;
     contentType: 'image' | 'video' | 'profile' | 'age_verification' | 'report';
@@ -42,5 +42,6 @@ export interface I_ActionStats {
     suspended: number;
     deleted: number;
     warned: number;
+    blocked: number;
     total: number;
 }
