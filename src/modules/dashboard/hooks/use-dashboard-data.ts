@@ -34,10 +34,15 @@ export function useDashboardData() {
         { page: 1, limit: 50, sort: { createdAt: -1 } },
     );
 
-    const { paidUsersCount, promoUsersCount, blockedUsersCount } = useMemo(() => {
+    // Fetch total blocked users
+    const { totalDocs: blockedUsersCount, loading: blockedUsersLoading, refetch: refetchBlockedUsers } = useGetUsers(
+        { isAdminBlocked: true },
+        { limit: 0 },
+    );
+
+    const { paidUsersCount, promoUsersCount } = useMemo(() => {
         let paid = 0;
         let promo = 0;
-        let blocked = 0;
         for (const user of allUsers) {
             const hasPaid = user?.roles?.some(role => role?.name === 'PAID_MEMBER');
             const hasPromo = user?.roles?.some(role => role?.name === 'PROMO_MEMBER');
@@ -45,10 +50,8 @@ export function useDashboardData() {
                 paid++;
             if (hasPromo)
                 promo++;
-            if (user?.isAdminBlocked)
-                blocked++;
         }
-        return { paidUsersCount: paid, promoUsersCount: promo, blockedUsersCount: blocked };
+        return { paidUsersCount: paid, promoUsersCount: promo };
     }, [allUsers]);
 
     const usersLoading = allUsersLoading || recentUsersLoading;
@@ -72,6 +75,7 @@ export function useDashboardData() {
     useSmartPolling(() => {
         refetchAllUsers?.();
         refetchRecentUsers?.();
+        refetchBlockedUsers?.();
         refetchAds?.();
         refetchBlogs?.();
         refetchDestinations?.();
@@ -225,14 +229,14 @@ export function useDashboardData() {
                 id: '5',
                 title: 'Total Users',
                 value: totalUsers.toLocaleString(),
-                change: usersLoading ? '...' : `${blockedUsersCount} blocked`,
+                change: usersLoading || blockedUsersLoading ? '...' : `${blockedUsersCount} blocked`,
                 subtitle: 'Total registered users',
                 icon: Users,
                 color: 'text-amber-600',
                 bgColor: 'bg-gradient-to-r from-amber-100 to-orange-100',
                 gradient: 'from-amber-600 to-orange-600',
                 trend: 'up' as const,
-                loading: usersLoading,
+                loading: usersLoading || blockedUsersLoading,
                 percentage: 100,
             },
             {
@@ -278,7 +282,7 @@ export function useDashboardData() {
                 percentage: totalUsers > 0 ? (totalPayingUsers / totalUsers) * 100 : 0,
             },
         ];
-    }, [paidUsersCount, promoUsersCount, blockedUsersCount, totalUsers, activeAdsCount, totalAds, totalBlogs, totalDestinations, usersLoading, adsLoading, blogsLoading, destinationsLoading]);
+    }, [paidUsersCount, promoUsersCount, blockedUsersCount, totalUsers, activeAdsCount, totalAds, totalBlogs, totalDestinations, usersLoading, blockedUsersLoading, adsLoading, blogsLoading, destinationsLoading]);
 
     const tasks = useMemo(() => {
         const now = new Date();
