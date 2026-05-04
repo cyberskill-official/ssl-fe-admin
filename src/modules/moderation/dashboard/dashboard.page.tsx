@@ -1,4 +1,4 @@
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { Document, Page, PDFDownloadLink, Text } from '@react-pdf/renderer';
 import { Activity, AlertTriangle, BrainCircuit, Calendar, Download, Flag, Image, Shield, Target, Trash2, UserCheck, Users, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
@@ -101,7 +101,7 @@ export default function ModerationDashboard() {
     };
 
     // Use report data from API
-    const filteredActions = report.actions;
+    const filteredActions = report.actions as unknown as I_ModerationAction[];
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
@@ -474,7 +474,13 @@ export default function ModerationDashboard() {
                                     </select>
                                 </div>
                                 <PDFDownloadLink
-                                    document={<div>{t('moderation-report-placeholder')}</div>}
+                                    document={(
+                                        <Document>
+                                            <Page>
+                                                <Text>{t('moderation-report-placeholder')}</Text>
+                                            </Page>
+                                        </Document>
+                                    )}
                                     fileName={`${t('moderation-report')}-${months[selectedMonth]?.toLowerCase() ?? ''}-${selectedYear}.pdf`}
                                     className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                                 >
@@ -583,7 +589,7 @@ export default function ModerationDashboard() {
                                                             <div className="flex items-center">
                                                                 {_getContentTypeIcon(action.contentType)}
                                                                 <span className="ml-2 text-sm font-medium capitalize text-gray-900 dark:text-white">
-                                                                    {t(action.contentType.replace('_', '-'))}
+                                                                    {t((action.contentType || '').replace('_', '-'))}
                                                                 </span>
                                                             </div>
                                                         </td>
