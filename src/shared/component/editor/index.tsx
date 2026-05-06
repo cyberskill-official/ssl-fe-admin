@@ -105,13 +105,10 @@ function InitialValuePlugin({ value, valueKey }: InitialValuePluginProps) {
 
     useEffect(() => {
         const isFirstApply = appliedKeyRef.current === undefined;
-        const keyChanged = valueKey !== undefined && valueKey !== null && appliedKeyRef.current !== valueKey;
-        const rootElement = editor.getRootElement();
-        const isEditorFocused = !!rootElement && typeof document !== 'undefined'
-            && rootElement.contains(document.activeElement);
-        const shouldSyncUnfocusedValue = !isEditorFocused && value !== appliedValueRef.current;
+        const shouldForceApply = (valueKey !== undefined && valueKey !== null && appliedKeyRef.current !== valueKey)
+            || (appliedKeyRef.current === valueKey && value !== appliedValueRef.current);
 
-        if (!isFirstApply && !keyChanged && !shouldSyncUnfocusedValue) {
+        if (!isFirstApply && !shouldForceApply) {
             return;
         }
 
