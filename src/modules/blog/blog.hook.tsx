@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@cyberskill/shared/react/apollo-client';
+import { useLazyQuery, useMutation, useQuery } from '@cyberskill/shared/react/apollo-client';
 import { toast } from '@cyberskill/shared/react/toast';
 import { useCallback, useEffect } from 'react';
 
@@ -48,6 +48,34 @@ export function useGetBlog(
     const blog = data?.getBlog?.result || null;
 
     return { blog, loading, error, refetch };
+}
+
+export function useGetBlogLazy() {
+    const [getBlog, { data, loading, error }] = useLazyQuery<getBlogQuery, getBlogQueryVariables>(
+        getBlogDocument,
+        {
+            fetchPolicy: 'network-only',
+        },
+    );
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error.message || 'Failed to fetch blog details');
+        }
+    }, [error]);
+
+    const execute = useCallback((filter: getBlogQueryVariables['filter']) => {
+        return getBlog({
+            variables: {
+                filter,
+                options: {
+                    populate: ['author', 'language', 'relatedBlogs'],
+                },
+            },
+        });
+    }, [getBlog]);
+
+    return { getBlog: execute, blog: data?.getBlog?.result || null, loading, error };
 }
 
 export function useGetBlogs(

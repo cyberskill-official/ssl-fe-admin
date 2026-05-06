@@ -243,11 +243,12 @@ const FORM_DEFAULT_VALUES = {
     isLustEditorial: false,
 };
 
-export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updating }: {
+export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updating, fetching }: {
     onCreateSubmit: (data: Input_CreateBlog) => void;
     onUpdateSubmit: (id: string, data: Input_UpdateBlog) => void;
     creating?: boolean;
     updating?: boolean;
+    fetching?: boolean;
 } & { ref?: React.RefObject<any> }) {
     const { t } = useTranslate('blog');
     const [isOpen, setIsOpen] = useState(false);
@@ -1245,6 +1246,14 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                                     </div>
                                 </>
                             )}
+                    {fetching && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-sm">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="h-12 w-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin" />
+                                <p className="text-purple-600 dark:text-purple-400 font-semibold">{t('loading-blog-details') || 'Loading blog details...'}</p>
+                            </div>
+                        </div>
+                    )}
                 </form>
             </DrawerContent>
         </Drawer>
