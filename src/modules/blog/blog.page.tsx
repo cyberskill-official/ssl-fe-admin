@@ -10,7 +10,7 @@ import { useTranslate } from '#shared/i18n';
 import { usePortal } from '#shared/portal';
 
 import { BlogForm } from './blog-form';
-import { useCreateBlog, useDeleteBlog, useGetBlogs, useUpdateBlog } from './blog.hook';
+import { useCreateBlog, useDeleteBlog, useGetBlogLazy, useGetBlogs, useUpdateBlog } from './blog.hook';
 import { BlogList } from './blog.list';
 
 export default function BlogPage() {
@@ -82,6 +82,7 @@ export default function BlogPage() {
     }, [filteredBlogs, page, pageSize, isSearching]);
 
     const totalDocs = isSearching ? filteredBlogs.length : rawTotalDocs;
+    const { getBlog, loading: fetchingBlog } = useGetBlogLazy();
     const { createBlog, loading: creatingBlog } = useCreateBlog();
     const { updateBlog, loading: updatingBlog } = useUpdateBlog();
     const { deleteBlog } = useDeleteBlog();
@@ -90,9 +91,24 @@ export default function BlogPage() {
         blogFormRef.current?.open();
     }, []);
 
-    const _handleEditBlog = useCallback((blog: T_Blog) => {
-        blogFormRef.current?.open(blog);
-    }, []);
+    const _handleEditBlog = useCallback(async (blog: T_Blog) => {
+        // Always fetch the full blog detail to ensure content is present (especially for local env)
+        try {
+            const { data } = await getBlog({ id: blog.id });
+            const fullBlog = data?.getBlog?.result;
+            if (fullBlog) {
+                blogFormRef.current?.open(fullBlog);
+            }
+            else {
+                // Fallback to the list data if fetch fails
+                blogFormRef.current?.open(blog);
+            }
+        }
+        catch (error) {
+            console.error('Failed to fetch blog details:', error);
+            blogFormRef.current?.open(blog);
+        }
+    }, [getBlog]);
 
     const _handleDeleteBlog = useCallback((blog: T_Blog) => {
         setBlogToDelete(blog);
@@ -234,6 +250,7 @@ export default function BlogPage() {
                     onUpdateSubmit={_handleUpdateSubmit}
                     creating={creatingBlog}
                     updating={updatingBlog}
+                    fetching={fetchingBlog}
                 />
                 <ConfirmDialog
                     open={!!blogToDelete}

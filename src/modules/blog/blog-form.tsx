@@ -1,3 +1,4 @@
+/* eslint-disable react-dom/no-unsafe-iframe-sandbox */
 import {
     Eye,
     FileText,
@@ -28,6 +29,7 @@ import { E_FormMode } from '#shared/typescript';
 import { useAllLanguages } from '../language/language.hook';
 import { useGetBlogs } from './blog.hook';
 import { BlogSocialLinks } from './components/blog-social-links';
+import { getPodcastEmbedHeight, normalizePodcastEmbedUrl } from './podcast-embed';
 
 const HTML_TAG_RE = /<[^>]*>/g;
 const UNDERSCORE_RE = /_/g;
@@ -35,6 +37,7 @@ const WORD_START_RE = /\b\w/g;
 
 function BlogPreview({ formData, type, selectedAuthor }: { formData: any; type: E_BlogType; selectedAuthor?: T_User | null }) {
     const isPodcast = type === E_BlogType.PODCAST;
+    const podcastEmbedUrl = normalizePodcastEmbedUrl(formData.iframe);
 
     // Get author's profile picture from gallery
     const authorProfilePicture = selectedAuthor?.partner1?.gallery?.url;
@@ -115,8 +118,25 @@ function BlogPreview({ formData, type, selectedAuthor }: { formData: any; type: 
                                     )}
                         </div>
 
+                        {isPodcast && podcastEmbedUrl && (
+                            <div className="mt-8">
+                                <div className="bg-red-800/40 backdrop-blur-sm p-6 rounded-lg border border-red-600/30">
+                                    <iframe
+                                        src={podcastEmbedUrl}
+                                        title={formData.title || 'Podcast embed'}
+                                        frameBorder="0"
+                                        allowFullScreen
+                                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                        sandbox="allow-scripts allow-same-origin allow-presentation"
+                                        className="w-full rounded-lg"
+                                        style={{ height: getPodcastEmbedHeight(podcastEmbedUrl) }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         {/* Audio Player for Podcast */}
-                        {isPodcast && formData.file && (
+                        {isPodcast && !podcastEmbedUrl && formData.file && (
                             <div className="mt-8">
                                 <div className="bg-red-800/40 backdrop-blur-sm p-6 rounded-lg border border-red-600/30">
                                     <div className="flex items-center gap-4 mb-4">
@@ -230,6 +250,7 @@ const FORM_DEFAULT_VALUES = {
     logo: '',
     cover: '',
     file: '',
+    iframe: '',
     socialLinks: [],
     seo: {
         title: '',
@@ -243,11 +264,12 @@ const FORM_DEFAULT_VALUES = {
     isLustEditorial: false,
 };
 
-export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updating }: {
+export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updating, fetching }: {
     onCreateSubmit: (data: Input_CreateBlog) => void;
     onUpdateSubmit: (id: string, data: Input_UpdateBlog) => void;
     creating?: boolean;
     updating?: boolean;
+    fetching?: boolean;
 } & { ref?: React.RefObject<any> }) {
     const { t } = useTranslate('blog');
     const [isOpen, setIsOpen] = useState(false);
@@ -299,6 +321,7 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
     const [selectedAuthor, setSelectedAuthor] = useState<T_User | null>(null);
     const type = watch('type');
     const isLustEditorial = watch('isLustEditorial');
+    const podcastEmbedUrl = normalizePodcastEmbedUrl(watch('iframe'));
 
     const BLOG_CATEGORIES = [
         E_BlogCategory.SWINGER_CLUB,
@@ -523,7 +546,7 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                     onSubmit={handleSubmit((data) => {
                         if (
                             (type === E_BlogType.BLOG && (!featuredImage || (!isLustEditorial && !logo)))
-                            || (type === E_BlogType.PODCAST && (!logo || !cover || !file))
+                            || (type === E_BlogType.PODCAST && (!logo || !cover || (!file && !podcastEmbedUrl)))
                         ) {
                             setUploadTouched(true);
                             return;
@@ -547,6 +570,7 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                             'logo' as keyof T_Blog,
                             'cover' as keyof T_Blog,
                             'file' as keyof T_Blog,
+                            'iframe' as keyof T_Blog,
                             'socialLinks' as keyof T_Blog,
                             'seo',
                             'isActive',
@@ -1062,8 +1086,21 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                                                                             <p className="text-green-600">{t('upload-file')}</p>
                                                                         </div>
                                                                     )}
-                                                        {(isSubmitted || uploadTouched) && !file && (
-                                                            <span className="text-red-500 text-xs">{t('required-field')}</span>
+                                                        {(isSubmitted || uploadTouched) && !file && !podcastEmbedUrl && (
+                                                            <span className="text-red-500 text-xs">Upload a file or provide an embed URL.</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-2 text-green-700">Podcast Player URL</label>
+                                                        <Input
+                                                            {...register('iframe')}
+                                                            placeholder="https://open.spotify.com/episode/... or https://youtu.be/..."
+                                                        />
+                                                        <p className="mt-2 text-xs text-gray-500">
+                                                            Accepted sources: Bunny, YouTube, Vimeo, Spotify, Apple Podcasts. Do not paste raw iframe HTML.
+                                                        </p>
+                                                        {(isSubmitted || uploadTouched) && !file && !podcastEmbedUrl && (
+                                                            <span className="text-red-500 text-xs">Upload a file or provide an embed URL.</span>
                                                         )}
                                                     </div>
                                                 </>
@@ -1245,6 +1282,14 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                                     </div>
                                 </>
                             )}
+                    {fetching && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-sm">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="h-12 w-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin" />
+                                <p className="text-purple-600 dark:text-purple-400 font-semibold">{t('loading-blog-details') || 'Loading blog details...'}</p>
+                            </div>
+                        </div>
+                    )}
                 </form>
             </DrawerContent>
         </Drawer>
