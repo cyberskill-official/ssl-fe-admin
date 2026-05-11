@@ -101,10 +101,12 @@ function OnChangePlugin({ onChange }: OnChangePluginProps) {
 function InitialValuePlugin({ value, valueKey }: InitialValuePluginProps) {
     const [editor] = useLexicalComposerContext();
     const appliedKeyRef = useRef<string | number | null | undefined>(undefined);
+    const appliedValueRef = useRef<string | undefined>(undefined);
 
     useEffect(() => {
         const isFirstApply = appliedKeyRef.current === undefined;
-        const shouldForceApply = valueKey !== undefined && valueKey !== null && appliedKeyRef.current !== valueKey;
+        const shouldForceApply = (valueKey !== undefined && valueKey !== null && appliedKeyRef.current !== valueKey)
+            || (appliedKeyRef.current === valueKey && value !== appliedValueRef.current);
 
         if (!isFirstApply && !shouldForceApply) {
             return;
@@ -124,6 +126,7 @@ function InitialValuePlugin({ value, valueKey }: InitialValuePluginProps) {
                     root.clear();
                     root.append($createParagraphNode());
                 });
+                appliedValueRef.current = value;
                 return;
             }
 
@@ -131,6 +134,7 @@ function InitialValuePlugin({ value, valueKey }: InitialValuePluginProps) {
                 const parsedValue = JSON.parse(value);
                 const newState = editor.parseEditorState(parsedValue);
                 editor.setEditorState(newState);
+                appliedValueRef.current = value;
             }
             catch {
                 editor.update(() => {
@@ -140,6 +144,7 @@ function InitialValuePlugin({ value, valueKey }: InitialValuePluginProps) {
                     paragraph.append($createTextNode(value?.trim() || ''));
                     root.append(paragraph);
                 });
+                appliedValueRef.current = value;
             }
         }, 0);
 

@@ -34,6 +34,7 @@ fragment F_Blog on T_Blog {
     isLustEditorial
     cover
     file
+    iframe
     readCount
     isActive
     socialLinks {
