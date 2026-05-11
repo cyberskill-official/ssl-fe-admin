@@ -21,7 +21,7 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { $createParagraphNode, $createTextNode, $getRoot } from 'lexical';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { cn } from '#shared/util';
 
@@ -105,10 +105,13 @@ function InitialValuePlugin({ value, valueKey }: InitialValuePluginProps) {
 
     useEffect(() => {
         const isFirstApply = appliedKeyRef.current === undefined;
-        const shouldForceApply = (valueKey !== undefined && valueKey !== null && appliedKeyRef.current !== valueKey)
-            || (appliedKeyRef.current === valueKey && value !== appliedValueRef.current);
+        const keyChanged = valueKey !== undefined && valueKey !== null && appliedKeyRef.current !== valueKey;
+        const rootElement = editor.getRootElement();
+        const isEditorFocused = !!rootElement && typeof document !== 'undefined'
+            && rootElement.contains(document.activeElement);
+        const shouldSyncUnfocusedValue = !isEditorFocused && value !== appliedValueRef.current;
 
-        if (!isFirstApply && !shouldForceApply) {
+        if (!isFirstApply && !keyChanged && !shouldSyncUnfocusedValue) {
             return;
         }
 
@@ -239,7 +242,7 @@ export function Editor({
     contentClassName = 'min-h-[200px] outline-none p-4 text-gray-900 dark:text-gray-100',
     autoFocus = false,
 }: EditorProps) {
-    const initialConfig = {
+    const initialConfig = useMemo(() => ({
         namespace: 'LexicalEditor',
         theme: EDITOR_THEME,
         onError: (error: Error) => {
@@ -247,7 +250,7 @@ export function Editor({
         },
         nodes: DEFAULT_NODES,
         editable,
-    };
+    }), [editable]);
 
     return (
         <div className={cn('relative', className)}>
