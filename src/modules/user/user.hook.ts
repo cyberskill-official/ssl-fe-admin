@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type {
     createUserMutationVariables,
+    deactivateUserMutationVariables,
     deleteUserMutationVariables,
     getBlocksQuery,
     getUsersQuery,
@@ -12,7 +13,7 @@ import type {
     updateUserMutationVariables,
 } from '#shared/graphql';
 
-import { adminBlockUserDocument, adminUnBlockUserDocument, createUserDocument, deleteUserDocument, getBlocksDocument, getSubscriptionPriceDocument, getUsersDocument, updateUserDocument } from '#shared/graphql';
+import { adminBlockUserDocument, adminUnBlockUserDocument, createUserDocument, deactivateUserDocument, deleteUserDocument, getBlocksDocument, getSubscriptionPriceDocument, getUsersDocument, updateUserDocument } from '#shared/graphql';
 import { useTranslate } from '#shared/i18n';
 
 export interface I_UsersResponse {
@@ -133,13 +134,13 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
         filter.rolesNames = 'PROMO_MEMBER';
     }
 
-    // Add isDel and isAdminBlocked filters based on userStatus
+    // Add isDeactivated and isAdminBlocked filters based on userStatus
     if (searchFilters.userStatus === 'active') {
-        filter.isDel = false;
+        filter.isDeactivated = false;
         filter.isAdminBlocked = false;
     }
     else if (searchFilters.userStatus === 'deactivated') {
-        filter.isDel = true;
+        filter.isDeactivated = true;
         filter.isAdminBlocked = false;
     }
     else if (searchFilters.userStatus === 'blocked') {
@@ -368,9 +369,35 @@ export function useUpdateUser() {
 }
 
 export function useDeleteUser() {
-    const [updateUserMutation, { loading }] = useMutation(updateUserDocument, {
+    const [deleteUserMutation, { loading }] = useMutation(deleteUserDocument, {
         onCompleted: (response) => {
-            const { success, message } = response.updateUser;
+            const { success, message } = response.deleteUser;
+            if (success) {
+                toast.success('User permanently deleted successfully');
+            }
+            else {
+                toast.error(message || 'Failed to delete user');
+            }
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        },
+    });
+
+    const deleteUser = useCallback((filter: deleteUserMutationVariables['filter'], options?: deleteUserMutationVariables['options']) => {
+        return deleteUserMutation({ variables: { filter, options } });
+    }, [deleteUserMutation]);
+
+    return {
+        deleteUser,
+        loading,
+    };
+}
+
+export function useDeactivateUser() {
+    const [deactivateUserMutation, { loading }] = useMutation(deactivateUserDocument, {
+        onCompleted: (response) => {
+            const { success, message } = response.deactivateUser;
             if (success) {
                 toast.success('User deactivated successfully');
             }
@@ -383,18 +410,12 @@ export function useDeleteUser() {
         },
     });
 
-    const deleteUser = useCallback((filter: { id: string }) => {
-        return updateUserMutation({
-            variables: {
-                filter,
-                update: { isDel: true },
-                options: {},
-            },
-        });
-    }, [updateUserMutation]);
+    const deactivateUser = useCallback((filter: { id: string }) => {
+        return deactivateUserMutation({ variables: { filter } });
+    }, [deactivateUserMutation]);
 
     return {
-        deleteUser,
+        deactivateUser,
         loading,
     };
 }
