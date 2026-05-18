@@ -9,9 +9,9 @@ import {
     useAdminBlockUser,
     useAdminUnblockUser,
     useCreateUser,
+    useDeactivateUser,
     useDeleteUser,
     useGetBlocks,
-    usePermanentDeleteUser,
     useRestoreUser,
     UserForm,
     UserList,
@@ -303,9 +303,9 @@ export function AuthzPage() {
     const [userToDelete, setUserToDelete] = useState<T_User | null>(null);
     const [userToPermanentDelete, setUserToPermanentDelete] = useState<T_User | null>(null);
     const [deletingUser, setDeletingUser] = useState(false);
-    const { deleteUser } = useDeleteUser();
+    const { deleteUser, loading: deletingUserLoading } = useDeleteUser();
     const { restoreUser } = useRestoreUser();
-    const { permanentDeleteUser } = usePermanentDeleteUser();
+    const { deactivateUser } = useDeactivateUser();
 
     const [roleToDelete, setRoleToDelete] = useState<T_Role | null>(null);
     const [deletingRole, setDeletingRole] = useState(false);
@@ -690,7 +690,7 @@ export function AuthzPage() {
                         return;
                     }
                     setDeletingUser(true);
-                    await deleteUser({ id: userToDelete.id });
+                    await deactivateUser({ id: userToDelete.id });
                     setDeletingUser(false);
                     setUserToDelete(null);
                     await refetchUsers?.();
@@ -713,7 +713,7 @@ export function AuthzPage() {
                     }
                     setDeletingUser(true);
                     try {
-                        await permanentDeleteUser({ id: userToPermanentDelete.id });
+                        await deleteUser({ id: userToPermanentDelete.id });
                         await refetchUsers?.();
                         setUserToPermanentDelete(null);
                     }
