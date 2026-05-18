@@ -71,7 +71,7 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
             return value !== '';
         }
         if (key === 'userStatus') {
-            return value !== 'active';
+            return value !== 'all';
         }
         return value !== 'all';
     });
@@ -212,10 +212,10 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="active">
+                            <SelectItem value="all">
                                 <div className="flex items-center gap-2">
-                                    <Users className="h-3 w-3 text-green-600" />
-                                    {t('active-users')}
+                                    <Users className="h-3 w-3" />
+                                    {t('all-users')}
                                 </div>
                             </SelectItem>
                             <SelectItem value="deactivated">
@@ -289,7 +289,7 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                                     {t(filters.membershipStatus === 'paid' ? 'paid-members' : filters.membershipStatus === 'promo' ? 'promo-members' : 'free-members')}
                                 </span>
                             )}
-                            {filters.userStatus !== 'active' && (
+                            {filters.userStatus !== 'all' && (
                                 <span className={`px-2 py-1 rounded text-xs ${filters.userStatus === 'blocked' ? 'bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-200' : 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200'}`}>
                                     {t('user-status')}
                                     :

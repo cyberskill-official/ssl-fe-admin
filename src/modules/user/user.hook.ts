@@ -89,7 +89,7 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
         country: 'all',
         isActive: 'all', // 'all', 'active', 'inactive'
         membershipStatus: 'all', // 'all', 'free', 'paid'
-        userStatus: 'active', // 'active', 'deactivated', 'blocked'
+        userStatus: 'all', // 'all', 'active', 'deactivated', 'blocked'
     });
 
     // 'free' membership, username/email text search, and country need client-side filtering
@@ -265,7 +265,7 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
             country: 'all',
             isActive: 'all',
             membershipStatus: 'all',
-            userStatus: 'active',
+            userStatus: 'all',
         });
         setPage(1);
     }, []);
