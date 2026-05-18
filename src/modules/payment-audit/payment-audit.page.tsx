@@ -444,7 +444,7 @@ function SubscriptionLedgerTable({
                         <TableCell>
                             <div className="min-w-44">
                                 <div>{formatDate(row.nextReconcileAt)}</div>
-                                <div className="text-xs text-slate-500">{`Grace: ${formatDate(row.graceUntil)}`}</div>
+                                <div className="text-xs text-slate-500">{`Access: ${formatDate(row.graceUntil)}`}</div>
                                 <div className="text-xs text-slate-500">{`Checked: ${formatDate(row.lastCheckedAt)}`}</div>
                             </div>
                         </TableCell>
