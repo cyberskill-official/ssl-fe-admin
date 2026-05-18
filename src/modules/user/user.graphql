@@ -51,6 +51,16 @@ mutation deleteUser($filter: Input_QueryUser!, $options: JSON) {
     }
 }
 
+mutation deactivateUser($filter: Input_QueryUser!, $options: JSON) {
+    deactivateUser(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            ...F_User
+        }
+    }
+}
+
 mutation adminBlockUser($doc: Input_AdminBlockUser!) {
     adminBlockUser(doc: $doc) {
         success
