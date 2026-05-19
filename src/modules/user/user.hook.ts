@@ -138,6 +138,7 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
     if (searchFilters.userStatus === 'active') {
         filter.isDeactivated = false;
         filter.isAdminBlocked = false;
+        filter.isDel = false;
     }
     else if (searchFilters.userStatus === 'deactivated') {
         filter.isDeactivated = true;
