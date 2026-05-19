@@ -1,4 +1,4 @@
-import { Clock, CreditCard, Filter, Globe, Search, Users, X } from 'lucide-react';
+import { Check, Clock, CreditCard, Filter, Globe, Search, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useGetCountries } from '#modules/location/country/country.hook';
@@ -218,6 +218,12 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                                     {t('all-users')}
                                 </div>
                             </SelectItem>
+                            <SelectItem value="active">
+                                <div className="flex items-center gap-2">
+                                    <Check className="h-3 w-3 text-green-600" />
+                                    {t('active-users')}
+                                </div>
+                            </SelectItem>
                             <SelectItem value="deactivated">
                                 <div className="flex items-center gap-2">
                                     <X className="h-3 w-3 text-red-600" />
@@ -273,14 +279,6 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                                     {filters.country}
                                 </span>
                             )}
-                            {filters.isActive !== 'all' && (
-                                <span className="bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">
-                                    {t('status')}
-                                    :
-                                    {' '}
-                                    {t(filters.isActive)}
-                                </span>
-                            )}
                             {filters.membershipStatus !== 'all' && (
                                 <span className="bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">
                                     {t('membership')}
@@ -290,11 +288,23 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                                 </span>
                             )}
                             {filters.userStatus !== 'all' && (
-                                <span className={`px-2 py-1 rounded text-xs ${filters.userStatus === 'blocked' ? 'bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-200' : 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200'}`}>
+                                <span className={`px-2 py-1 rounded text-xs ${
+                                    filters.userStatus === 'active'
+                                        ? 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200'
+                                        : filters.userStatus === 'blocked'
+                                            ? 'bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-200'
+                                            : 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200'
+                                }`}>
                                     {t('user-status')}
                                     :
                                     {' '}
-                                    {t(filters.userStatus === 'deactivated' ? 'deactivated-users' : 'blocked-users')}
+                                    {t(
+                                        filters.userStatus === 'active'
+                                            ? 'active-users'
+                                            : filters.userStatus === 'deactivated'
+                                                ? 'deactivated-users'
+                                                : 'blocked-users'
+                                    )}
                                 </span>
                             )}
                         </div>

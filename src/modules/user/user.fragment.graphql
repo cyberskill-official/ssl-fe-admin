@@ -140,6 +140,7 @@ fragment F_User on T_User {
     followerCount
     followingCount
     isAdminBlocked
+    isDeactivated
     isGuardianView
     guardianOwnerId
     notes {
