@@ -136,13 +136,10 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
 
     // Add isDeactivated and isAdminBlocked filters based on userStatus
     if (searchFilters.userStatus === 'active') {
-        filter.isDeactivated = false;
-        filter.isAdminBlocked = false;
-        filter.isDel = false;
+        filter.isActive = true;
     }
     else if (searchFilters.userStatus === 'deactivated') {
         filter.isDeactivated = true;
-        filter.isAdminBlocked = false;
     }
     else if (searchFilters.userStatus === 'blocked') {
         filter.isAdminBlocked = true;
