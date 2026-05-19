@@ -484,9 +484,15 @@ export function UserList({
             cell: ({ row }) => {
                 const user = row.original;
                 const isDeleted = user.isDel === true;
+                const isDeactivated = user.isDeactivated === true;
                 return (
                     <div className="flex gap-2">
-                        {isDeleted && (
+                        {isDeactivated && (
+                            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-800 hover:text-white transition-colors">
+                                {t('deactivated-users')}
+                            </Badge>
+                        )}
+                        {isDeleted && !isDeactivated && (
                             <Badge className="bg-red-100 text-red-800 hover:bg-red-800 hover:text-white transition-colors">
                                 {t('deleted')}
                             </Badge>

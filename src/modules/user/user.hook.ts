@@ -440,7 +440,7 @@ export function useRestoreUser() {
         return updateUserMutation({
             variables: {
                 filter,
-                update: { isDel: false },
+                update: { isDel: false, isDeactivated: false },
                 options: {},
             },
         });
