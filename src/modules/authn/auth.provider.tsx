@@ -20,6 +20,7 @@ import type {
 import {
     checkAuthDocument,
     createGuardianVisitTokenDocument,
+    E_LoginType,
     loginDocument,
     logoutDocument,
 } from '#shared/graphql';
@@ -115,9 +116,14 @@ export function AuthProvider({ children }: I_Children) {
     const [createGuardianVisitToken, { loading: loadingGuardianToken }] = useMutation<createGuardianVisitTokenMutation, createGuardianVisitTokenMutationVariables>(createGuardianVisitTokenDocument);
 
     const _handleLogin = useCallback((variables: loginMutationVariables, callback?: () => void) => {
-        login({ variables }).then((response) => {
+        const loginVariables = {
+            ...variables,
+            loginType: E_LoginType.ADMIN,
+        };
+
+        login({ variables: loginVariables }).then((response) => {
             if (response.data?.login.success && response.data.login.result?.token) {
-                token.set(response.data.login.result.token, !!variables.rememberMe);
+                token.set(response.data.login.result.token, !!loginVariables.rememberMe);
             }
             if (callback) {
                 callback();
