@@ -10,7 +10,7 @@ import type { sendOTPEmailForAdminMutation, sendOTPEmailForAdminMutationVariable
 
 import { Button, Checkbox, Input } from '#shared/component';
 import { ROUTES } from '#shared/constant';
-import { E_LoginType, sendOTPEmailForAdminDocument } from '#shared/graphql';
+import { sendOTPEmailForAdminDocument } from '#shared/graphql';
 
 import { useAuth } from '../auth.hook';
 
@@ -115,7 +115,6 @@ function LoginPage() {
         login({
             identity: email,
             password,
-            loginType: E_LoginType.ADMIN,
             rememberMe,
             tempOtp: otp.toUpperCase(),
         }, () => {

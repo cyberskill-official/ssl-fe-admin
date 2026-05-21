@@ -22,14 +22,8 @@ mutation sendOTPEmailForAdmin($email: String!) {
     }
 }
 
-mutation login(
-    $identity: String!
-    $password: String!
-    $loginType: E_LoginType!
-    $rememberMe: Boolean
-    $tempOtp: String
-) {
-    login(identity: $identity, password: $password, loginType: $loginType, rememberMe: $rememberMe, tempOtp: $tempOtp) {
+mutation login($identity: String!, $password: String!, $rememberMe: Boolean, $tempOtp: String) {
+    login(identity: $identity, password: $password, rememberMe: $rememberMe, tempOtp: $tempOtp) {
         success
         message
         result {
