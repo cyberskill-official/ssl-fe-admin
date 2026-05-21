@@ -116,7 +116,7 @@ function generateAgeVerificationPDF(user: any) {
         <p><strong>Content Provider:</strong> ${user.name} ("Provider")</p>
 
         <h3>1. Purpose</h3>
-        <p>This Agreement governs the terms under which the Provider submits content (photos, videos, text, or other media) to the Platform SecretSwingerLust, operated by Jolo Media ApS. The Agreement ensures legal compliance, appropriate use, and content ownership verification.</p>
+        <p>This Agreement governs the terms under which the Provider submits content (photos, videos, text, or other media) to the Platform Secret<sup>®</sup> Swinger Lust, operated by Jolo Media ApS. The Agreement ensures legal compliance, appropriate use, and content ownership verification.</p>
 
         <h3>2. Eligibility and Verification</h3>
         <p><strong>2.1.</strong> The Provider confirms they are at least 18 years old and have completed age verification through a dual process: initial AI-based pre-verification followed by manual approval by a moderator.</p>
@@ -202,7 +202,7 @@ function generateAgeVerificationPDF(user: any) {
     <div class="footer">
         <p><strong>Document Generated:</strong> ${new Date().toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'long' })}</p>
         <p><strong>Document ID:</strong> ${documentId}</p>
-        <p style="margin-top: 15px;">This is an official document from SecretSwingerLust Platform</p>
+        <p style="margin-top: 15px;">This is an official document from Secret Swinger Lust Platform</p>
         <p>Jolo Media ApS | Parkvej 5, 7500 Holstebro, Denmark</p>
     </div>
 </body>

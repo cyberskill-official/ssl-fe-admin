@@ -290,6 +290,10 @@ function LoginPage() {
                             )}
                 </form>
             </div>
+
+            <div className="absolute bottom-4 text-center text-xs text-white/50 z-[2]">
+                Secret® is a registered EU trademark.
+            </div>
         </div>
     );
 }
