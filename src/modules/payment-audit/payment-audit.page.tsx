@@ -15,12 +15,18 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import type { T_User } from '#shared/graphql';
+
 import { useGetRoles } from '#modules/authz/role';
+import { useGetUsers } from '#modules/user/user.hook';
 import {
     Badge,
     Button,
     Input,
     Pagination,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
     Select,
     SelectContent,
     SelectItem,
@@ -79,6 +85,8 @@ interface I_PaginationInfo {
     page: number;
     totalPages: number;
 }
+
+type T_UserLookup = Map<string, T_User>;
 
 const ALL_STATUS = 'ALL';
 
@@ -360,24 +368,75 @@ function ErrorBanner({ message }: { message?: string }) {
     );
 }
 
-function UserCell({ order }: { order: T_PaymentAuditOrder }) {
-    const roles = order.user?.roles?.map(role => role?.name).filter(Boolean).join(', ');
+function UserReference({
+    userId,
+    user,
+    userById,
+}: {
+    userId?: string | null;
+    user?: T_User | null;
+    userById: T_UserLookup;
+}) {
+    const resolvedUser = user ?? (userId ? userById.get(userId) : undefined);
+    const displayName = resolvedUser?.username || resolvedUser?.email || shortText(userId);
+    const roles = resolvedUser?.roles?.map(role => role?.name).filter(Boolean).join(', ');
 
     return (
-        <div className="min-w-52 whitespace-normal">
-            <div className="font-semibold text-slate-950">{order.user?.username || order.user?.email || 'Unknown user'}</div>
-            <div className="text-xs text-slate-500">{order.user?.email || order.userId || '-'}</div>
-            {roles && <div className="mt-1 text-xs text-slate-500">{roles}</div>}
-        </div>
+        <Popover>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className="max-w-56 truncate text-left font-semibold text-purple-700 hover:text-purple-900 hover:underline"
+                >
+                    {displayName || 'Unknown user'}
+                </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-lg">
+                <div className="space-y-3">
+                    <div>
+                        <div className="font-semibold text-slate-950">{resolvedUser?.username || 'Unknown user'}</div>
+                        <div className="text-xs text-slate-500">{resolvedUser?.email || '-'}</div>
+                    </div>
+                    <div className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-1 text-xs">
+                        <span className="font-semibold text-slate-500">User ID</span>
+                        <span className="break-all font-mono text-slate-800">{resolvedUser?.id || userId || '-'}</span>
+                        <span className="font-semibold text-slate-500">Member until</span>
+                        <span className="text-slate-800">{formatDate(resolvedUser?.membershipExpiresAt)}</span>
+                        <span className="font-semibold text-slate-500">Cancelled</span>
+                        <span className="text-slate-800">{resolvedUser?.membershipCancelled ? 'Yes' : 'No'}</span>
+                        <span className="font-semibold text-slate-500">Last IP</span>
+                        <span className="break-all font-mono text-slate-800">{resolvedUser?.lastLoginIp || '-'}</span>
+                    </div>
+                    {roles && (
+                        <div>
+                            <div className="text-xs font-semibold text-slate-500">Roles</div>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                                {roles.split(', ').map(role => (
+                                    <Badge
+                                        key={`${resolvedUser?.id || userId}-${role}`}
+                                        variant="outline"
+                                        className="border-slate-200 bg-slate-50 text-[11px] text-slate-700"
+                                    >
+                                        {role}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </PopoverContent>
+        </Popover>
     );
 }
 
 function SubscriptionLedgerTable({
     rows,
     loading,
+    userById,
 }: {
     rows: T_PaymentAuditSubscription[];
     loading: boolean;
+    userById: T_UserLookup;
 }) {
     return (
         <Table>
@@ -401,7 +460,9 @@ function SubscriptionLedgerTable({
                             <div className="min-w-52">
                                 <div className="font-mono text-xs font-semibold">{shortText(row.providerSubscriptionId, 14, 8)}</div>
                                 <div className="text-xs text-slate-500">{row.provider || '-'}</div>
-                                <div className="font-mono text-xs text-slate-500">{`U: ${shortText(row.userId)}`}</div>
+                                <div className="mt-1 text-xs">
+                                    <UserReference userId={row.userId} userById={userById} />
+                                </div>
                             </div>
                         </TableCell>
                         <TableCell>
@@ -465,9 +526,11 @@ function SubscriptionLedgerTable({
 function OrdersTable({
     rows,
     loading,
+    userById,
 }: {
     rows: T_PaymentAuditOrder[];
     loading: boolean;
+    userById: T_UserLookup;
 }) {
     return (
         <Table>
@@ -479,21 +542,23 @@ function OrdersTable({
                     <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Subscription</TableHead>
-                    <TableHead>Effect</TableHead>
                     <TableHead>Audit</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {rows.length === 0 && <EmptyRow colSpan={8} loading={loading} />}
+                {rows.length === 0 && <EmptyRow colSpan={7} loading={loading} />}
                 {rows.map((order) => {
-                    const paymentRequest = order.paymentRequests?.[0];
-                    const subscriptionId = order.paymentTransaction?.subscriptionId
-                        || getMetaString(paymentRequest?.meta, 'subscriptionId')
-                        || getMetaString(order.meta, 'subscriptionId');
+                    const subscriptionId = getMetaString(order.meta, 'subscriptionId')
+                        || getMetaString(order.meta, 'providerSubscriptionId')
+                        || getMetaString(order.meta, 'paypalSubscriptionId');
 
                     return (
                         <TableRow key={order.id || `${order.userId}-${order.createdAt}`}>
-                            <TableCell><UserCell order={order} /></TableCell>
+                            <TableCell>
+                                <div className="min-w-52 whitespace-normal">
+                                    <UserReference userId={order.userId} user={order.user as T_User | null | undefined} userById={userById} />
+                                </div>
+                            </TableCell>
                             <TableCell>
                                 <div className="min-w-36">
                                     <div>{formatDate(order.user?.membershipExpiresAt)}</div>
@@ -516,20 +581,9 @@ function OrdersTable({
                                 <div className="min-w-44 font-mono text-xs">{shortText(subscriptionId, 12, 8)}</div>
                             </TableCell>
                             <TableCell>
-                                <div className="min-w-36">
-                                    {formatDate(order.effectsAppliedAt)}
-                                    {order.status === 'PAID' && !order.effectsAppliedAt && (
-                                        <Badge variant="outline" className="mt-1 border-red-200 bg-red-50 text-red-700">
-                                            Missing effect
-                                        </Badge>
-                                    )}
-                                </div>
-                            </TableCell>
-                            <TableCell>
                                 <div className="flex min-w-44 flex-col gap-2">
                                     <JsonDetails label="Order meta" value={order.meta} />
-                                    <JsonDetails label="Payment request" value={paymentRequest} />
-                                    <JsonDetails label="Transaction" value={order.paymentTransaction} />
+                                    <div className="font-mono text-xs text-slate-500">{`Txn: ${shortText(order.paymentTransactionId)}`}</div>
                                 </div>
                             </TableCell>
                         </TableRow>
@@ -553,21 +607,18 @@ function TransactionsTable({
                 <TableRow>
                     <TableHead>Time</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Operation</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>User / Order</TableHead>
-                    <TableHead>PayPal refs</TableHead>
+                    <TableHead>Provider</TableHead>
+                    <TableHead>Transaction</TableHead>
                     <TableHead>Error</TableHead>
                     <TableHead>Payload</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {rows.length === 0 && <EmptyRow colSpan={9} loading={loading} />}
+                {rows.length === 0 && <EmptyRow colSpan={6} loading={loading} />}
                 {rows.map(row => (
                     <TableRow key={row.id || `${row.transactionId}-${row.createdAt}`}>
                         <TableCell>
-                            <div className="min-w-36">{formatDate(row.occurredAt || row.performedAt || row.createdAt)}</div>
+                            <div className="min-w-36">{formatDate(row.performedAt || row.createdAt)}</div>
                         </TableCell>
                         <TableCell>
                             <div className="flex flex-col gap-1">
@@ -575,21 +626,11 @@ function TransactionsTable({
                                 <BooleanBadge value={row.success} />
                             </div>
                         </TableCell>
-                        <TableCell><StatusBadge value={row.source} /></TableCell>
-                        <TableCell>{row.operation || '-'}</TableCell>
-                        <TableCell>{formatAmount(row.amount, row.currency)}</TableCell>
-                        <TableCell>
-                            <div className="min-w-44 font-mono text-xs">
-                                <div>{`U: ${shortText(row.userId)}`}</div>
-                                <div>{`O: ${shortText(row.orderId)}`}</div>
-                                <div>{`R: ${shortText(row.paymentRequestId)}`}</div>
-                            </div>
-                        </TableCell>
+                        <TableCell>PAYPAL</TableCell>
                         <TableCell>
                             <div className="min-w-52 font-mono text-xs">
-                                <div>{`Sub: ${shortText(row.subscriptionId, 12, 8)}`}</div>
                                 <div>{`Txn: ${shortText(row.transactionId, 12, 8)}`}</div>
-                                <div>{`Evt: ${shortText(row.providerEventId, 12, 8)}`}</div>
+                                <div>{`ID: ${shortText(row.id)}`}</div>
                             </div>
                         </TableCell>
                         <TableCell>
@@ -608,9 +649,11 @@ function TransactionsTable({
 function GatewayEventsTable({
     rows,
     loading,
+    userById,
 }: {
     rows: T_PaymentAuditGatewayEvent[];
     loading: boolean;
+    userById: T_UserLookup;
 }) {
     return (
         <Table>
@@ -650,10 +693,10 @@ function GatewayEventsTable({
                             </div>
                         </TableCell>
                         <TableCell>
-                            <div className="min-w-44 font-mono text-xs">
-                                <div>{`U: ${shortText(row.userId)}`}</div>
-                                <div>{`O: ${shortText(row.orderId)}`}</div>
-                                <div>{`R: ${shortText(row.paymentRequestId)}`}</div>
+                            <div className="min-w-44 text-xs">
+                                <UserReference userId={row.userId} userById={userById} />
+                                <div className="mt-1 font-mono">{`O: ${shortText(row.orderId)}`}</div>
+                                <div className="font-mono">{`R: ${shortText(row.paymentRequestId)}`}</div>
                             </div>
                         </TableCell>
                         <TableCell>{row.attemptCount ?? '-'}</TableCell>
@@ -677,10 +720,12 @@ function EntitlementChangesTable({
     rows,
     loading,
     roleNameById,
+    userById,
 }: {
     rows: T_PaymentAuditEntitlementChange[];
     loading: boolean;
     roleNameById: Map<string, string>;
+    userById: T_UserLookup;
 }) {
     return (
         <Table>
@@ -701,7 +746,11 @@ function EntitlementChangesTable({
                 {rows.map(row => (
                     <TableRow key={row.id || `${row.userId}-${row.changedAt}`}>
                         <TableCell><div className="min-w-36">{formatDate(row.changedAt || row.createdAt)}</div></TableCell>
-                        <TableCell><div className="min-w-44 font-mono text-xs">{shortText(row.userId)}</div></TableCell>
+                        <TableCell>
+                            <div className="min-w-44 text-xs">
+                                <UserReference userId={row.userId} userById={userById} />
+                            </div>
+                        </TableCell>
                         <TableCell>
                             <div className="flex min-w-40 flex-col gap-1">
                                 <StatusBadge value={row.source} />
@@ -854,7 +903,7 @@ export default function PaymentAuditPage() {
         page,
         limit,
         sort: { createdAt: -1 },
-        populate: ['user', 'pricing', 'paymentTransaction', 'paymentRequests'],
+        populate: ['user', 'pricing'],
     }), [limit, page]);
 
     const subscriptionOptions = useMemo(() => ({
@@ -939,6 +988,22 @@ export default function PaymentAuditPage() {
     const gatewayEventQuery = usePaymentAuditGatewayEvents(gatewayEventFilter, ledgerOptions, activeTab === 'events');
     const entitlementQuery = usePaymentAuditEntitlementChanges(entitlementFilter, entitlementOptions, activeTab === 'entitlements');
     const paymentRequestQuery = usePaymentAuditPaymentRequests(paymentRequestFilter, ledgerOptions, activeTab === 'requests');
+    const { users: auditUsers } = useGetUsers(
+        { isDel: false },
+        {
+            pagination: false,
+            sort: { username: 1 },
+            skip: activeTab === 'transactions' || activeTab === 'requests',
+        },
+    );
+
+    const userById = useMemo(() => {
+        return new Map(
+            auditUsers
+                .filter(user => user?.id)
+                .map(user => [user.id!, user] as const),
+        );
+    }, [auditUsers]);
 
     const visibleSubscriptions = useMemo(() => subscriptionQuery.subscriptions.filter(row => matchesSearch(row, search)), [subscriptionQuery.subscriptions, search]);
     const visibleOrders = useMemo(() => orderQuery.orders.filter(row => matchesSearch(row, search)), [orderQuery.orders, search]);
@@ -1143,22 +1208,22 @@ export default function PaymentAuditPage() {
 
                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                         <TabsContent value="subscriptions" className="m-0">
-                            <SubscriptionLedgerTable rows={visibleSubscriptions} loading={subscriptionQuery.loading} />
+                            <SubscriptionLedgerTable rows={visibleSubscriptions} loading={subscriptionQuery.loading} userById={userById} />
                         </TabsContent>
                         <TabsContent value="transactions" className="m-0">
                             <TransactionsTable rows={visibleTransactions} loading={transactionQuery.loading} />
                         </TabsContent>
                         <TabsContent value="events" className="m-0">
-                            <GatewayEventsTable rows={visibleGatewayEvents} loading={gatewayEventQuery.loading} />
+                            <GatewayEventsTable rows={visibleGatewayEvents} loading={gatewayEventQuery.loading} userById={userById} />
                         </TabsContent>
                         <TabsContent value="entitlements" className="m-0">
-                            <EntitlementChangesTable rows={visibleEntitlementChanges} loading={entitlementQuery.loading} roleNameById={roleNameById} />
+                            <EntitlementChangesTable rows={visibleEntitlementChanges} loading={entitlementQuery.loading} roleNameById={roleNameById} userById={userById} />
                         </TabsContent>
                         <TabsContent value="requests" className="m-0">
                             <PaymentRequestsTable rows={visiblePaymentRequests} loading={paymentRequestQuery.loading} />
                         </TabsContent>
                         <TabsContent value="orders" className="m-0">
-                            <OrdersTable rows={visibleOrders} loading={orderQuery.loading} />
+                            <OrdersTable rows={visibleOrders} loading={orderQuery.loading} userById={userById} />
                         </TabsContent>
 
                         <Pagination

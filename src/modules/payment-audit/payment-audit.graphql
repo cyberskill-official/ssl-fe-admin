@@ -24,34 +24,6 @@ query getPaymentAuditOrders($filter: Input_QueryOrder, $options: JSON) {
                 status
                 orderType
                 paymentTransactionId
-                paymentTransaction {
-                    id
-                    provider
-                    operation
-                    transactionId
-                    providerEventId
-                    paymentRequestId
-                    subscriptionId
-                    amount
-                    currency
-                    status
-                    success
-                    source
-                    errorCode
-                    errorMessage
-                    occurredAt
-                    performedAt
-                }
-                paymentRequests {
-                    id
-                    status
-                    gateway
-                    externalOrderId
-                    meta
-                    createdAt
-                    updatedAt
-                }
-                effectsAppliedAt
                 meta
                 pricingId
                 pricing {
@@ -221,23 +193,12 @@ query getPaymentAuditTransactions($filter: Input_QueryPaymentTransaction, $optio
                 isDel
                 createdAt
                 updatedAt
-                provider
-                operation
                 transactionId
-                providerEventId
-                userId
-                orderId
-                paymentRequestId
-                subscriptionId
-                amount
-                currency
                 status
                 success
-                source
                 errorCode
                 errorMessage
                 responsePayload
-                occurredAt
                 performedAt
             }
             totalDocs
