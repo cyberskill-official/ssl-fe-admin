@@ -1,0 +1,260 @@
+query getPaymentAuditOrders($filter: Input_QueryOrder, $options: JSON) {
+    getOrders(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                id
+                createdAt
+                updatedAt
+                userId
+                user {
+                    id
+                    username
+                    email
+                    lastLoginIp
+                    membershipExpiresAt
+                    membershipCancelled
+                    roles {
+                        id
+                        name
+                    }
+                }
+                amount
+                status
+                orderType
+                paymentTransactionId
+                meta
+                pricingId
+                pricing {
+                    id
+                    type
+                    price
+                    taxRate
+                    country {
+                        id
+                        name
+                        iso2
+                    }
+                    currency {
+                        id
+                        code
+                        symbol
+                    }
+                }
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getPaymentAuditSubscriptions($filter: Input_QueryPaymentSubscription, $options: JSON) {
+    getPaymentSubscriptions(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                id
+                isDel
+                createdAt
+                updatedAt
+                provider
+                providerSubscriptionId
+                userId
+                status
+                providerStatus
+                currentPeriodStartAt
+                currentPeriodEndAt
+                nextBillingAt
+                lastPaidAt
+                paymentRequestId
+                orderId
+                pricingId
+                amount
+                currency
+                replacesSubscriptionId
+                replacedBySubscriptionId
+                replacementReason
+                nextReconcileAt
+                graceUntil
+                lastCheckedAt
+                lastError
+                source
+                providerSnapshot
+                meta
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getPaymentAuditEntitlementChanges($filter: Input_QueryMembershipEntitlementChange, $options: JSON) {
+    getMembershipEntitlementChanges(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                id
+                isDel
+                createdAt
+                updatedAt
+                userId
+                orderId
+                paymentRequestId
+                provider
+                providerSubscriptionId
+                transactionId
+                effectKey
+                source
+                reason
+                beforeMembershipExpiresAt
+                afterMembershipExpiresAt
+                beforeRolesIds
+                afterRolesIds
+                beforeMembershipCancelled
+                afterMembershipCancelled
+                changedAt
+                metadata
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getPaymentAuditPaymentRequests($filter: Input_QueryPaymentRequest, $options: JSON) {
+    getPaymentRequests(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                id
+                isDel
+                createdAt
+                updatedAt
+                gateway
+                status
+                paymentUrl
+                externalOrderId
+                gatewayResponse
+                meta
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getPaymentAuditTransactions($filter: Input_QueryPaymentTransaction, $options: JSON) {
+    getPaymentTransactions(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                id
+                isDel
+                createdAt
+                updatedAt
+                transactionId
+                status
+                success
+                errorCode
+                errorMessage
+                responsePayload
+                performedAt
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}
+
+query getPaymentAuditGatewayEvents($filter: Input_QueryPaymentGatewayEvent, $options: JSON) {
+    getPaymentGatewayEvents(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                id
+                isDel
+                createdAt
+                updatedAt
+                provider
+                eventId
+                eventType
+                resourceId
+                subscriptionId
+                transactionId
+                orderId
+                paymentRequestId
+                userId
+                verificationStatus
+                processingStatus
+                receivedAt
+                processedAt
+                attemptCount
+                errorMessage
+                headers
+                payload
+            }
+            totalDocs
+            limit
+            hasPrevPage
+            hasNextPage
+            page
+            totalPages
+            offset
+            prevPage
+            nextPage
+            pagingCounter
+            meta
+        }
+    }
+}

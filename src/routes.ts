@@ -32,6 +32,7 @@ export default [
             route('destination', './modules/destination/destination.page.tsx'),
             route('email-campaign', './modules/email-campaign/email-campaign.page.tsx'),
             route('pricing', './modules/pricing/pricing.page.tsx'),
+            route('payments', './modules/payment-audit/payment-audit.page.tsx'),
             route('tag', './modules/tag/tag.page.tsx'),
             route('catalogue', './modules/catalogue/catalogue.page.tsx'),
             route('settings', './modules/setting/setting.page.tsx'),
