@@ -22,10 +22,22 @@ export function useDashboardData() {
     const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
     const resetPromoTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Fetch all users with roles populated to count paid/promo client-side
-    const { users: allUsers, totalDocs: totalUsers, loading: allUsersLoading, refetch: refetchAllUsers } = useGetUsers(
-        { isDel: false },
-        { page: 1, limit: 5000, populate: ['roles'] },
+    // Fetch total registered users (empty filter to match User List's default count)
+    const { totalDocs: totalUsers, loading: totalUsersLoading, refetch: refetchTotalUsers } = useGetUsers(
+        {},
+        { limit: 0 },
+    );
+
+    // Fetch total paid users
+    const { totalDocs: paidUsersCount, loading: paidUsersLoading, refetch: refetchPaidUsers } = useGetUsers(
+        { rolesNames: ['PAID_MEMBER'], isDel: false },
+        { limit: 0 },
+    );
+
+    // Fetch total promo users
+    const { totalDocs: promoUsersCount, loading: promoUsersLoading, refetch: refetchPromoUsers } = useGetUsers(
+        { rolesNames: ['PROMO_MEMBER'], isDel: false },
+        { limit: 0 },
     );
 
     // Fetch recent users (sorted by newest) for the tasks section only
@@ -40,21 +52,7 @@ export function useDashboardData() {
         { limit: 0 },
     );
 
-    const { paidUsersCount, promoUsersCount } = useMemo(() => {
-        let paid = 0;
-        let promo = 0;
-        for (const user of allUsers) {
-            const hasPaid = user?.roles?.some(role => role?.name === 'PAID_MEMBER');
-            const hasPromo = user?.roles?.some(role => role?.name === 'PROMO_MEMBER');
-            if (hasPaid)
-                paid++;
-            if (hasPromo)
-                promo++;
-        }
-        return { paidUsersCount: paid, promoUsersCount: promo };
-    }, [allUsers]);
-
-    const usersLoading = allUsersLoading || recentUsersLoading;
+    const usersLoading = totalUsersLoading || paidUsersLoading || promoUsersLoading || recentUsersLoading;
 
     const { advertisements, totalDocs: totalAds, loading: adsLoading, refetch: refetchAds } = useGetAdvertisements(
         {},
@@ -73,7 +71,9 @@ export function useDashboardData() {
 
 
     useSmartPolling(() => {
-        refetchAllUsers?.();
+        refetchTotalUsers?.();
+        refetchPaidUsers?.();
+        refetchPromoUsers?.();
         refetchRecentUsers?.();
         refetchBlockedUsers?.();
         refetchAds?.();
