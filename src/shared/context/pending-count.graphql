@@ -1,0 +1,14 @@
+query getAdminPendingCounts($refresh: Boolean) {
+    getAdminPendingCounts(refresh: $refresh) {
+        success
+        message
+        result {
+            generatedAt
+            cacheHit
+            cacheTtlSeconds
+            ageVerification
+            media
+            messages
+        }
+    }
+}

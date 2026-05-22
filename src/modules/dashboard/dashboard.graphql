@@ -1,0 +1,32 @@
+query getDashboardReport {
+    getDashboardReport {
+        success
+        message
+        result {
+            generatedAt
+            cacheHit
+            cacheTtlSeconds
+            counts {
+                totalUsers
+                paidUsersCount
+                promoUsersCount
+                freeUsersCount
+                totalPayingUsersCount
+                blockedUsersCount
+                recentUsersCount
+                totalAds
+                activeAdsCount
+                totalBlogs
+                totalDestinations
+                conversionRate
+            }
+            activity {
+                date
+                label
+                totalActivity
+                userRegistrations
+                contentPublished
+            }
+        }
+    }
+}

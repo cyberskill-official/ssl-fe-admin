@@ -1,13 +1,28 @@
+import { useQuery } from '@cyberskill/shared/react/apollo-client';
 import { Activity, Shield, Target, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import type { getDashboardReportQuery, T_DashboardReportCounts } from '#shared/graphql';
+
+import { getDashboardReportDocument } from '#shared/graphql';
 import { useSmartPolling } from '#shared/hooks';
 
-import { useGetAdvertisements } from '../../advertisement/advertisement.hook';
-import { useGetBlogs } from '../../blog/blog.hook';
-import { useGetDestinations } from '../../destination/destination.hook';
-import { useGetUsers } from '../../user/user.hook';
 import { DASHBOARD_CONSTANTS } from '../dashboard.constants';
+
+const EMPTY_DASHBOARD_COUNTS: T_DashboardReportCounts = {
+    totalUsers: 0,
+    paidUsersCount: 0,
+    promoUsersCount: 0,
+    freeUsersCount: 0,
+    totalPayingUsersCount: 0,
+    blockedUsersCount: 0,
+    recentUsersCount: 0,
+    totalAds: 0,
+    activeAdsCount: 0,
+    totalBlogs: 0,
+    totalDestinations: 0,
+    conversionRate: 0,
+};
 
 export function useDashboardData() {
     const [newPaidUsersCount, setNewPaidUsersCount] = useState(0);
@@ -22,68 +37,40 @@ export function useDashboardData() {
     const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
     const resetPromoTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Fetch total registered users (empty filter to match User List's default count)
-    const { totalDocs: totalUsers, loading: totalUsersLoading, refetch: refetchTotalUsers } = useGetUsers(
-        {},
-        { limit: 0 },
+    const { data, loading: reportLoading, refetch } = useQuery<getDashboardReportQuery>(
+        getDashboardReportDocument,
+        {
+            fetchPolicy: 'cache-first',
+            nextFetchPolicy: 'cache-first',
+            notifyOnNetworkStatusChange: true,
+        },
     );
-
-    // Fetch total paid users
-    const { totalDocs: paidUsersCount, loading: paidUsersLoading, refetch: refetchPaidUsers } = useGetUsers(
-        { rolesNames: ['PAID_MEMBER'], isDel: false },
-        { limit: 0 },
-    );
-
-    // Fetch total promo users
-    const { totalDocs: promoUsersCount, loading: promoUsersLoading, refetch: refetchPromoUsers } = useGetUsers(
-        { rolesNames: ['PROMO_MEMBER'], isDel: false },
-        { limit: 0 },
-    );
-
-    // Fetch recent users (sorted by newest) for the tasks section only
-    const { users: recentUsersList, loading: recentUsersLoading, refetch: refetchRecentUsers } = useGetUsers(
-        { isDel: false },
-        { page: 1, limit: 50, sort: { createdAt: -1 } },
-    );
-
-    // Fetch total blocked users
-    const { totalDocs: blockedUsersCount, loading: blockedUsersLoading, refetch: refetchBlockedUsers } = useGetUsers(
-        { isAdminBlocked: true },
-        { limit: 0 },
-    );
-
-    const usersLoading = totalUsersLoading || paidUsersLoading || promoUsersLoading || recentUsersLoading;
-
-    const { advertisements, totalDocs: totalAds, loading: adsLoading, refetch: refetchAds } = useGetAdvertisements(
-        {},
-        { page: DASHBOARD_CONSTANTS.PAGINATION.DEFAULT_PAGE, limit: DASHBOARD_CONSTANTS.PAGINATION.DEFAULT_LIMIT },
-    );
-
-    const { blogs: _blogs, totalDocs: totalBlogs, loading: blogsLoading, refetch: refetchBlogs } = useGetBlogs(
-        {},
-        { page: DASHBOARD_CONSTANTS.PAGINATION.DEFAULT_PAGE, limit: DASHBOARD_CONSTANTS.PAGINATION.DEFAULT_LIMIT },
-    );
-
-    const { destinations: _destinations, totalDocs: totalDestinations, loading: destinationsLoading, refetch: refetchDestinations } = useGetDestinations(
-        {},
-        { page: DASHBOARD_CONSTANTS.PAGINATION.DEFAULT_PAGE, limit: DASHBOARD_CONSTANTS.PAGINATION.DEFAULT_LIMIT },
-    );
-
+    const report = data?.getDashboardReport?.result;
+    const reportCounts = report?.counts ?? EMPTY_DASHBOARD_COUNTS;
+    const totalUsers = reportCounts.totalUsers ?? 0;
+    const paidUsersCount = reportCounts.paidUsersCount ?? 0;
+    const promoUsersCount = reportCounts.promoUsersCount ?? 0;
+    const freeUsersCount = reportCounts.freeUsersCount ?? Math.max(totalUsers - paidUsersCount - promoUsersCount, 0);
+    const totalPayingUsersCount = reportCounts.totalPayingUsersCount ?? paidUsersCount + promoUsersCount;
+    const blockedUsersCount = reportCounts.blockedUsersCount ?? 0;
+    const recentUsersCount = reportCounts.recentUsersCount ?? 0;
+    const totalAds = reportCounts.totalAds ?? 0;
+    const activeAdsCount = reportCounts.activeAdsCount ?? 0;
+    const totalBlogs = reportCounts.totalBlogs ?? 0;
+    const totalDestinations = reportCounts.totalDestinations ?? 0;
+    const conversionRate = reportCounts.conversionRate ?? (totalUsers > 0 ? (totalPayingUsersCount / totalUsers) * 100 : 0);
+    const usersLoading = reportLoading;
+    const blockedUsersLoading = reportLoading;
+    const adsLoading = reportLoading;
+    const blogsLoading = reportLoading;
+    const destinationsLoading = reportLoading;
+    const activity = useMemo(() => {
+        return (report?.activity ?? []).filter(activityPoint => activityPoint !== null);
+    }, [report?.activity]);
 
     useSmartPolling(() => {
-        refetchTotalUsers?.();
-        refetchPaidUsers?.();
-        refetchPromoUsers?.();
-        refetchRecentUsers?.();
-        refetchBlockedUsers?.();
-        refetchAds?.();
-        refetchBlogs?.();
-        refetchDestinations?.();
+        refetch?.();
     }, DASHBOARD_CONSTANTS.POLLING_INTERVAL);
-
-    const activeAdsCount = useMemo(() => {
-        return advertisements.filter(ad => ad.isActive).length;
-    }, [advertisements]);
 
     useEffect(() => {
         if (usersLoading) {
@@ -164,8 +151,7 @@ export function useDashboardData() {
     const stats = useMemo(() => {
         const paidUsers = paidUsersCount;
         const promoUsers = promoUsersCount;
-        const totalPayingUsers = paidUsers + promoUsers;
-        const freeUsers = totalUsers - totalPayingUsers;
+        const freeUsers = freeUsersCount;
         const activeAds = activeAdsCount;
 
         return [
@@ -270,7 +256,7 @@ export function useDashboardData() {
             {
                 id: '8',
                 title: 'Conversion Rate',
-                value: totalUsers > 0 ? `${((totalPayingUsers / totalUsers) * 100).toFixed(1)}%` : '0%',
+                value: `${conversionRate.toFixed(1)}%`,
                 change: usersLoading ? '...' : 'Free to paid',
                 subtitle: 'User conversion rate',
                 icon: TrendingUp,
@@ -279,23 +265,15 @@ export function useDashboardData() {
                 gradient: 'from-teal-600 to-cyan-600',
                 trend: 'up' as const,
                 loading: usersLoading,
-                percentage: totalUsers > 0 ? (totalPayingUsers / totalUsers) * 100 : 0,
+                percentage: conversionRate,
             },
         ];
-    }, [paidUsersCount, promoUsersCount, blockedUsersCount, totalUsers, activeAdsCount, totalAds, totalBlogs, totalDestinations, usersLoading, blockedUsersLoading, adsLoading, blogsLoading, destinationsLoading]);
+    }, [paidUsersCount, promoUsersCount, freeUsersCount, blockedUsersCount, totalUsers, activeAdsCount, totalAds, totalBlogs, totalDestinations, conversionRate, usersLoading, blockedUsersLoading, adsLoading, blogsLoading, destinationsLoading]);
 
     const tasks = useMemo(() => {
         const now = new Date();
         const today = now.toLocaleDateString();
-        const nowTime = now.getTime();
-        const recentUsers = recentUsersList.filter((user) => {
-            if (!user.createdAt) {
-                return false;
-            }
-            const created = new Date(user.createdAt);
-            const daysDiff = (nowTime - created.getTime()) / (1000 * 60 * 60 * 24);
-            return daysDiff <= 7;
-        }).length;
+        const recentUsers = recentUsersCount;
 
         const activeAds = activeAdsCount;
 
@@ -361,7 +339,7 @@ export function useDashboardData() {
                 icon: Target,
             },
         ];
-    }, [recentUsersList, activeAdsCount, totalBlogs, totalDestinations, usersLoading, adsLoading, blogsLoading, destinationsLoading]);
+    }, [recentUsersCount, activeAdsCount, totalBlogs, totalDestinations, usersLoading, adsLoading, blogsLoading, destinationsLoading]);
 
     return {
         stats,
@@ -378,7 +356,10 @@ export function useDashboardData() {
             totalDestinations,
             paidUsersCount,
             promoUsersCount,
+            totalPayingUsersCount,
+            freeUsersCount,
         },
+        activity,
         loading: {
             usersLoading,
             adsLoading,

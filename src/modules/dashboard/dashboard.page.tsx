@@ -20,6 +20,7 @@ function Dashboard() {
         newPaidUsersCount,
         newPromoUsersCount,
         counts,
+        activity,
         loading,
     } = useDashboardData();
 
@@ -43,7 +44,7 @@ function Dashboard() {
 
             <DashboardStatsGrid stats={stats} />
 
-            <RevenueSection counts={counts} loading={loading} />
+            <RevenueSection counts={counts} activity={activity} loading={loading} />
 
             <BusinessPerformanceSection counts={counts} loading={loading} />
 

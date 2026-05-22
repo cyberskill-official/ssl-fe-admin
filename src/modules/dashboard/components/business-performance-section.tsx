@@ -4,6 +4,9 @@ interface I_BusinessPerformanceSectionProps {
     counts: {
         totalUsers: number;
         paidUsersCount: number;
+        promoUsersCount: number;
+        totalPayingUsersCount: number;
+        freeUsersCount: number;
         totalBlogs: number;
         totalDestinations: number;
         totalAds: number;
@@ -18,7 +21,7 @@ interface I_BusinessPerformanceSectionProps {
 }
 
 export function BusinessPerformanceSection({ counts, loading }: I_BusinessPerformanceSectionProps) {
-    const { totalUsers, paidUsersCount, totalBlogs, totalDestinations, totalAds, activeAdsCount } = counts;
+    const { totalUsers, paidUsersCount, totalPayingUsersCount, freeUsersCount, totalBlogs, totalDestinations, totalAds, activeAdsCount } = counts;
     const { usersLoading, blogsLoading, destinationsLoading, adsLoading } = loading;
 
     return (
@@ -38,10 +41,10 @@ export function BusinessPerformanceSection({ counts, loading }: I_BusinessPerfor
                     {[
                         { metric: 'Total Registered Users', value: totalUsers.toLocaleString(), change: usersLoading ? '...' : 'All time', trend: 'up' },
                         { metric: 'Paying Members', value: paidUsersCount.toLocaleString(), change: usersLoading ? '...' : 'Active', trend: 'up' },
-                        { metric: 'Free Members', value: (totalUsers - paidUsersCount).toLocaleString(), change: usersLoading ? '...' : 'Active', trend: 'up' },
+                        { metric: 'Free Members', value: freeUsersCount.toLocaleString(), change: usersLoading ? '...' : 'Active', trend: 'up' },
                         { metric: 'Active Blogs', value: totalBlogs.toString(), change: blogsLoading ? '...' : 'Published', trend: 'up' },
                         { metric: 'Active Destinations', value: totalDestinations.toString(), change: destinationsLoading ? '...' : 'Listed', trend: 'up' },
-                        { metric: 'Conversion Rate', value: totalUsers > 0 ? `${((paidUsersCount / totalUsers) * 100).toFixed(1)}%` : '0%', change: usersLoading ? '...' : 'Free to Paid', trend: 'up' },
+                        { metric: 'Conversion Rate', value: totalUsers > 0 ? `${((totalPayingUsersCount / totalUsers) * 100).toFixed(1)}%` : '0%', change: usersLoading ? '...' : 'Free to Paid', trend: 'up' },
                     ].map(item => (
                         <div key={item.metric} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-100 dark:border-slate-600">
                             <div>
