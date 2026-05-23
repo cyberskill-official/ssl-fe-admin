@@ -125,12 +125,18 @@ export function useRecentModerationActivities(limit = 10) {
             type: log?.moderationMedia?.type?.toLowerCase() || 'unknown',
             action: (() => {
                 const act = log?.action?.toLowerCase() || 'unknown';
-                if (act === 'block') return 'blocked';
-                if (act === 'warn') return 'warned';
-                if (act === 'suspend') return 'suspended';
-                if (act === 'approve') return 'approved';
-                if (act === 'reject') return 'rejected';
-                if (act === 'delete') return 'deleted';
+                if (act === 'block')
+                    return 'blocked';
+                if (act === 'warn')
+                    return 'warned';
+                if (act === 'suspend')
+                    return 'suspended';
+                if (act === 'approve')
+                    return 'approved';
+                if (act === 'reject')
+                    return 'rejected';
+                if (act === 'delete')
+                    return 'deleted';
                 return act;
             })(),
             reason: log?.reason || '',
@@ -150,7 +156,7 @@ export function useRecentModerationActivities(limit = 10) {
         }));
 
         const allActivities = [...logsActivities, ...blocksActivities].sort(
-            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
         );
 
         return allActivities.slice(0, limit);
@@ -210,7 +216,8 @@ export function useMonthlyModerationReport(
         });
 
         const filteredBlocks = blocks.filter((user: any) => {
-            if (!user?.updatedAt) return false;
+            if (!user?.updatedAt)
+                return false;
             const blockDate = new Date(user.updatedAt);
             return blockDate.getMonth() === month && blockDate.getFullYear() === year;
         });
@@ -225,12 +232,18 @@ export function useMonthlyModerationReport(
             profileName: log?.user?.username || 'Unknown',
             action: (() => {
                 const act = log?.action?.toLowerCase() || 'unknown';
-                if (act === 'block') return 'blocked';
-                if (act === 'warn') return 'warned';
-                if (act === 'suspend') return 'suspended';
-                if (act === 'approve') return 'approved';
-                if (act === 'reject') return 'rejected';
-                if (act === 'delete') return 'deleted';
+                if (act === 'block')
+                    return 'blocked';
+                if (act === 'warn')
+                    return 'warned';
+                if (act === 'suspend')
+                    return 'suspended';
+                if (act === 'approve')
+                    return 'approved';
+                if (act === 'reject')
+                    return 'rejected';
+                if (act === 'delete')
+                    return 'deleted';
                 return act;
             })(),
             moderator: 'Admin',
@@ -253,7 +266,7 @@ export function useMonthlyModerationReport(
         }));
 
         const allActions = [...logActions, ...blockActions].sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
 
         return {
@@ -312,7 +325,8 @@ export function useModerationActionStats(month: number, year: number) {
         });
 
         const filteredBlocks = blocks.filter((user: any) => {
-            if (!user?.updatedAt) return false;
+            if (!user?.updatedAt)
+                return false;
             const blockDate = new Date(user.updatedAt);
             return blockDate.getMonth() === month && blockDate.getFullYear() === year;
         });
