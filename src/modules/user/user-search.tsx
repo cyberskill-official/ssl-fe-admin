@@ -1,4 +1,4 @@
-import { Check, Clock, CreditCard, Filter, Globe, Search, Users, X } from 'lucide-react';
+import { Check, Clock, CreditCard, Filter, Globe, Search, Trash2, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useGetCountries } from '#modules/location/country/country.hook';
@@ -154,6 +154,7 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                         placeholder={t('all-countries')}
                         disabled={loading}
                         onClear={() => handleInputChange('country', 'all')}
+                        className="h-9"
                     />
                 </div>
 
@@ -294,7 +295,8 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                                         : filters.userStatus === 'blocked'
                                             ? 'bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-200'
                                             : 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200'
-                                }`}>
+                                }`}
+                                >
                                     {t('user-status')}
                                     :
                                     {' '}
@@ -303,7 +305,7 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                                             ? 'active-users'
                                             : filters.userStatus === 'deactivated'
                                                 ? 'deactivated-users'
-                                                : 'blocked-users'
+                                                : 'blocked-users',
                                     )}
                                 </span>
                             )}

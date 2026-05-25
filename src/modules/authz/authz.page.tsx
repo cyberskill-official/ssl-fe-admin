@@ -303,7 +303,7 @@ export function AuthzPage() {
     const [userToDelete, setUserToDelete] = useState<T_User | null>(null);
     const [userToPermanentDelete, setUserToPermanentDelete] = useState<T_User | null>(null);
     const [deletingUser, setDeletingUser] = useState(false);
-    const { deleteUser, loading: deletingUserLoading } = useDeleteUser();
+    const { deleteUser, loading: _deletingUserLoading } = useDeleteUser();
     const { restoreUser } = useRestoreUser();
     const { deactivateUser } = useDeactivateUser();
 
@@ -545,6 +545,7 @@ export function AuthzPage() {
                                 password: data.password,
                                 rolesIds: data.rolesIds,
                                 isActive: true,
+                                isEmailVerified: true,
                                 registerStep: E_RegisterStep.COMPLETE,
                             });
                             if (res.data?.createUser?.success) {

@@ -1,5 +1,7 @@
 import { Calendar, DollarSign, Target, TrendingUp } from 'lucide-react';
 
+import type { T_DashboardActivityPoint } from '#shared/graphql';
+
 import { Button } from '#shared/component';
 
 import { RevenueChart } from './revenue-chart';
@@ -11,7 +13,10 @@ interface I_RevenueSectionProps {
         totalAds: number;
         totalBlogs: number;
         totalDestinations: number;
+        paidUsersCount: number;
+        promoUsersCount: number;
     };
+    activity: T_DashboardActivityPoint[];
     loading: {
         usersLoading: boolean;
         adsLoading: boolean;
@@ -20,9 +25,9 @@ interface I_RevenueSectionProps {
     };
 }
 
-export function RevenueSection({ counts, loading }: I_RevenueSectionProps) {
+export function RevenueSection({ counts, activity, loading }: I_RevenueSectionProps) {
     const { totalUsers, activeAdsCount, totalAds, totalBlogs, totalDestinations } = counts;
-    const { adsLoading, blogsLoading, destinationsLoading } = loading;
+    const { usersLoading, adsLoading, blogsLoading, destinationsLoading } = loading;
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -43,7 +48,12 @@ export function RevenueSection({ counts, loading }: I_RevenueSectionProps) {
                     </div>
                 </div>
                 <div className="h-80 bg-gradient-to-br from-gray-50 to-purple-50 dark:from-slate-700 dark:to-slate-600 rounded-2xl border border-gray-100 dark:border-slate-600 p-6">
-                    <RevenueChart height={280} />
+                    <RevenueChart
+                        height={280}
+                        activity={activity}
+                        counts={counts}
+                        loading={usersLoading || adsLoading || blogsLoading}
+                    />
                 </div>
             </div>
 

@@ -62,7 +62,10 @@ export function Sidebar() {
                     </div>
                     <div>
                         <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                            SecretSwingerLust
+                            Secret
+                            <sup>®</sup>
+                            {' '}
+                            Swinger Lust
                         </h1>
                         <p className="text-xs text-gray-500 dark:text-gray-300">Admin Panel</p>
                     </div>
@@ -109,6 +112,9 @@ export function Sidebar() {
                 </ScrollArea>
             </SidebarContent>
             <Separator />
+            <div className="py-3 px-4 text-center text-[10px] text-gray-400 dark:text-gray-500">
+                Secret® is a registered EU trademark.
+            </div>
         </Root>
     );
 }

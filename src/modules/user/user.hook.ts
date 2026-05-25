@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type {
     createUserMutationVariables,
-    deactivateUserMutationVariables,
     deleteUserMutationVariables,
     getBlocksQuery,
     getUsersQuery,
@@ -128,15 +127,16 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
     };
 
     if (searchFilters.membershipStatus === 'paid') {
-        filter.rolesNames = 'PAID_MEMBER';
+        filter.rolesNames = ['PAID_MEMBER'];
     }
     else if (searchFilters.membershipStatus === 'promo') {
-        filter.rolesNames = 'PROMO_MEMBER';
+        filter.rolesNames = ['PROMO_MEMBER'];
     }
 
-    // Add isDeactivated and isAdminBlocked filters based on userStatus
+    // Add isDeactivated, isAdminBlocked, and isDel filters based on userStatus
     if (searchFilters.userStatus === 'active') {
         filter.isActive = true;
+        filter.isDel = false;
     }
     else if (searchFilters.userStatus === 'deactivated') {
         filter.isDeactivated = true;
@@ -144,6 +144,7 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
     }
     else if (searchFilters.userStatus === 'blocked') {
         filter.isAdminBlocked = true;
+        filter.isDel = true;
     }
 
     const { users: rawUsers, loading, error, refetch, totalDocs: serverTotalDocs, totalPages: serverTotalPages, hasNextPage: serverHasNextPage, hasPrevPage: serverHasPrevPage } = useGetUsers(filter, options);
