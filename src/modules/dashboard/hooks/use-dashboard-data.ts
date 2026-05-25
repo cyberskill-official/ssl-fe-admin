@@ -51,7 +51,7 @@ export function useDashboardData() {
     const { data: totalUsersData, loading: totalUsersLoading, refetch: refetchTotal } = useQuery<getUsersQuery, getUsersQueryVariables>(
         getUsersDocument,
         {
-            variables: { filter: { isDel: false }, options: { limit: 1 } },
+            variables: { filter: {}, options: { limit: 1 } },
             fetchPolicy: 'no-cache',
             notifyOnNetworkStatusChange: true,
         },
