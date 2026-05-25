@@ -154,6 +154,7 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                         placeholder={t('all-countries')}
                         disabled={loading}
                         onClear={() => handleInputChange('country', 'all')}
+                        className="h-9"
                     />
                 </div>
 
