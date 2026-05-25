@@ -492,7 +492,7 @@ export function UserList({
                                 {t('deactivated-users')}
                             </Badge>
                         )}
-                        {isDeleted && !isDeactivated && (
+                        {isDeleted && !isDeactivated && !user.isAdminBlocked && (
                             <Badge className="bg-red-100 text-red-800 hover:bg-red-800 hover:text-white transition-colors">
                                 {t('deleted')}
                             </Badge>
