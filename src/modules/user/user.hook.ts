@@ -146,13 +146,6 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
         filter.isAdminBlocked = true;
         filter.isDel = true;
     }
-    else if (searchFilters.userStatus === 'deleted') {
-        filter.isDel = true;
-        filter.isDeactivated = false;
-    }
-    else {
-        filter.isDel = false;
-    }
 
     const { users: rawUsers, loading, error, refetch, totalDocs: serverTotalDocs, totalPages: serverTotalPages, hasNextPage: serverHasNextPage, hasPrevPage: serverHasPrevPage } = useGetUsers(filter, options);
 

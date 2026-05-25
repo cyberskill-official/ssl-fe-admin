@@ -237,12 +237,6 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                                     {t('blocked-users')}
                                 </div>
                             </SelectItem>
-                            <SelectItem value="deleted">
-                                <div className="flex items-center gap-2">
-                                    <Trash2 className="h-3 w-3 text-red-600" />
-                                    {t('deleted-users')}
-                                </div>
-                            </SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -311,9 +305,7 @@ export function UserSearch({ filters, onFiltersChange, onClear, loading }: I_Use
                                             ? 'active-users'
                                             : filters.userStatus === 'deactivated'
                                                 ? 'deactivated-users'
-                                                : filters.userStatus === 'deleted'
-                                                    ? 'deleted-users'
-                                                    : 'blocked-users',
+                                                : 'blocked-users',
                                     )}
                                 </span>
                             )}
