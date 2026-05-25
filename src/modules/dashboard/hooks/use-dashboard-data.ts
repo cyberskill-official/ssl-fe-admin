@@ -75,7 +75,7 @@ export function useDashboardData() {
     const { data: blockedUsersData, loading: blockedUsersLoadingCount, refetch: refetchBlocked } = useQuery<getUsersQuery, getUsersQueryVariables>(
         getUsersDocument,
         {
-            variables: { filter: { isDel: false, isAdminBlocked: true }, options: { limit: 1 } },
+            variables: { filter: { isDel: true, isAdminBlocked: true }, options: { limit: 1 } },
             fetchPolicy: 'no-cache',
             notifyOnNetworkStatusChange: true,
         },
