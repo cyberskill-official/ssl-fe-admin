@@ -2,9 +2,9 @@ import { useQuery } from '@cyberskill/shared/react/apollo-client';
 import { Activity, Shield, Target, TrendingUp, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { getDashboardReportQuery, getUsersQuery, getUsersQueryVariables, T_DashboardReportCounts } from '#shared/graphql';
+import type { getDashboardReportQuery, T_DashboardReportCounts } from '#shared/graphql';
 
-import { getDashboardReportDocument, getUsersDocument } from '#shared/graphql';
+import { getDashboardReportDocument } from '#shared/graphql';
 import { useSmartPolling } from '#shared/hooks';
 
 import { DASHBOARD_CONSTANTS } from '../dashboard.constants';
@@ -48,55 +48,17 @@ export function useDashboardData() {
     const report = data?.getDashboardReport?.result;
     const reportCounts = report?.counts ?? EMPTY_DASHBOARD_COUNTS;
 
-    const { data: totalUsersData, loading: totalUsersLoading, refetch: refetchTotal } = useQuery<getUsersQuery, getUsersQueryVariables>(
-        getUsersDocument,
-        {
-            variables: { filter: {}, options: { limit: 1 } },
-            fetchPolicy: 'no-cache',
-            notifyOnNetworkStatusChange: true,
-        },
-    );
-    const { data: paidUsersData, loading: paidUsersLoading, refetch: refetchPaid } = useQuery<getUsersQuery, getUsersQueryVariables>(
-        getUsersDocument,
-        {
-            variables: { filter: { isDel: false, rolesNames: ['PAID_MEMBER'] }, options: { limit: 1 } },
-            fetchPolicy: 'no-cache',
-            notifyOnNetworkStatusChange: true,
-        },
-    );
-    const { data: promoUsersData, loading: promoUsersLoading, refetch: refetchPromo } = useQuery<getUsersQuery, getUsersQueryVariables>(
-        getUsersDocument,
-        {
-            variables: { filter: { isDel: false, rolesNames: ['PROMO_MEMBER'] }, options: { limit: 1 } },
-            fetchPolicy: 'no-cache',
-            notifyOnNetworkStatusChange: true,
-        },
-    );
-    const { data: blockedUsersData, loading: blockedUsersLoadingCount, refetch: refetchBlocked } = useQuery<getUsersQuery, getUsersQueryVariables>(
-        getUsersDocument,
-        {
-            variables: { filter: { isDel: true, isAdminBlocked: true }, options: { limit: 1 } },
-            fetchPolicy: 'no-cache',
-            notifyOnNetworkStatusChange: true,
-        },
-    );
-
     const refetchAll = useCallback(() => {
         refetch?.();
-        refetchTotal?.();
-        refetchPaid?.();
-        refetchPromo?.();
-        refetchBlocked?.();
-    }, [refetch, refetchTotal, refetchPaid, refetchPromo, refetchBlocked]);
+    }, [refetch]);
 
-    const totalUsers = totalUsersLoading ? (reportCounts.totalUsers ?? 0) : (totalUsersData?.getUsers?.result?.totalDocs ?? 0);
-    const paidUsersCount = paidUsersLoading ? (reportCounts.paidUsersCount ?? 0) : (paidUsersData?.getUsers?.result?.totalDocs ?? 0);
-    const promoUsersCount = promoUsersLoading ? (reportCounts.promoUsersCount ?? 0) : (promoUsersData?.getUsers?.result?.totalDocs ?? 0);
-    const blockedUsersCount = blockedUsersLoadingCount ? (reportCounts.blockedUsersCount ?? 0) : (blockedUsersData?.getUsers?.result?.totalDocs ?? 0);
-
-    const freeUsersCount = Math.max(totalUsers - paidUsersCount - promoUsersCount, 0);
-    const totalPayingUsersCount = paidUsersCount + promoUsersCount;
-    const conversionRate = totalUsers > 0 ? (totalPayingUsersCount / totalUsers) * 100 : 0;
+    const totalUsers = reportCounts.totalUsers ?? 0;
+    const paidUsersCount = reportCounts.paidUsersCount ?? 0;
+    const promoUsersCount = reportCounts.promoUsersCount ?? 0;
+    const blockedUsersCount = reportCounts.blockedUsersCount ?? 0;
+    const totalPayingUsersCount = reportCounts.totalPayingUsersCount ?? paidUsersCount + promoUsersCount;
+    const freeUsersCount = reportCounts.freeUsersCount ?? Math.max(totalUsers - totalPayingUsersCount, 0);
+    const conversionRate = reportCounts.conversionRate ?? (totalUsers > 0 ? (totalPayingUsersCount / totalUsers) * 100 : 0);
 
     const recentUsersCount = reportCounts.recentUsersCount ?? 0;
     const totalAds = reportCounts.totalAds ?? 0;
@@ -104,8 +66,8 @@ export function useDashboardData() {
     const totalBlogs = reportCounts.totalBlogs ?? 0;
     const totalDestinations = reportCounts.totalDestinations ?? 0;
 
-    const usersLoading = reportLoading || totalUsersLoading || paidUsersLoading || promoUsersLoading;
-    const blockedUsersLoading = reportLoading || blockedUsersLoadingCount;
+    const usersLoading = reportLoading;
+    const blockedUsersLoading = reportLoading;
     const adsLoading = reportLoading;
     const blogsLoading = reportLoading;
     const destinationsLoading = reportLoading;
