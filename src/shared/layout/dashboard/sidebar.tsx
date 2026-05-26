@@ -84,6 +84,7 @@ export function Sidebar() {
                                         <SidebarMenuItem key={path}>
                                             <NavLink
                                                 to={path}
+                                                prefetch="intent"
                                                 className={cn(`group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all`, {
                                                     'bg-purple-50 dark:bg-purple-900 text-purple-700 dark:text-purple-200 border-l-2 border-purple-600 shadow-sm': isActive,
                                                     'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white': !isActive,
