@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@cyberskill/shared/react/apollo-client';
 import { toast } from '@cyberskill/shared/react/toast';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type {
     createPricingMutation,
@@ -32,11 +32,22 @@ export function useGetPrices(
     filter?: getPricingsQueryVariables['filter'],
     options?: getPricingsQueryVariables['options'],
 ) {
+    const serializedFilter = JSON.stringify(filter);
+    const serializedOptions = JSON.stringify(options);
+
+    const memoizedFilter = useMemo(() => {
+        return serializedFilter ? JSON.parse(serializedFilter) : undefined;
+    }, [serializedFilter]);
+
+    const memoizedOptions = useMemo(() => {
+        return serializedOptions ? JSON.parse(serializedOptions) : undefined;
+    }, [serializedOptions]);
+
     const { data, loading, refetch } = useQuery<
         getPricingsQuery,
         getPricingsQueryVariables
     >(getPricingsDocument, {
-        variables: { filter, options },
+        variables: { filter: memoizedFilter, options: memoizedOptions },
         fetchPolicy: 'network-only',
     });
     const prices = data?.getPricings?.result?.docs || [];

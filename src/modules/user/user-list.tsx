@@ -16,7 +16,7 @@ import {
     UserCheck,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { T_User } from '#shared/graphql';
 
@@ -77,6 +77,12 @@ export function UserList({
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [ipCountries, setIpCountries] = useState<Record<string, string>>({});
+    const ipCountriesRef = useRef(ipCountries);
+
+    useEffect(() => {
+        ipCountriesRef.current = ipCountries;
+    }, [ipCountries]);
+
     const { countries } = useGetCountries({}, { pagination: false });
 
     const { users: allUsersForExport, loading: exportLoading } = useGetUsers(
@@ -122,8 +128,13 @@ export function UserList({
             const newIpCountries: Record<string, string> = {};
             const uniqueIps = [...new Set(users.map(u => u.lastLoginIp).filter(Boolean))] as string[];
 
+            const ipsToLoad = uniqueIps.filter(ip => !ipCountriesRef.current[ip]);
+            if (ipsToLoad.length === 0) {
+                return;
+            }
+
             await Promise.all(
-                uniqueIps.map(async (ip) => {
+                ipsToLoad.map(async (ip) => {
                     try {
                         const geo = await getGeolocationFromIP(ip);
                         if (geo.countryCode) {
@@ -138,7 +149,9 @@ export function UserList({
                 }),
             );
 
-            setIpCountries(prev => ({ ...prev, ...newIpCountries }));
+            if (Object.keys(newIpCountries).length > 0) {
+                setIpCountries(prev => ({ ...prev, ...newIpCountries }));
+            }
         };
 
         if (users.length > 0 && countries.length > 0) {

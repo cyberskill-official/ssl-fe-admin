@@ -36,10 +36,21 @@ export function useGetUsers(
 
     const { skip, ...queryOptions } = options || {};
 
+    const serializedFilter = JSON.stringify(filter);
+    const serializedOptions = JSON.stringify(queryOptions);
+
+    const memoizedFilter = useMemo(() => {
+        return serializedFilter ? JSON.parse(serializedFilter) : undefined;
+    }, [serializedFilter]);
+
+    const memoizedOptions = useMemo(() => {
+        return serializedOptions ? JSON.parse(serializedOptions) : undefined;
+    }, [serializedOptions]);
+
     const { data, loading, error, refetch } = useQuery<getUsersQuery, getUsersQueryVariables>(
         getUsersDocument,
         {
-            variables: { filter, options: queryOptions },
+            variables: { filter: memoizedFilter, options: memoizedOptions },
             fetchPolicy: 'no-cache',
             notifyOnNetworkStatusChange: true,
             skip: skip ?? false,
@@ -100,10 +111,10 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
     const [knownTotal, setKnownTotal] = useState(1000);
     const effectiveLimit = shouldFetchAll ? knownTotal : limit;
 
-    const options = {
+    const options = useMemo(() => ({
         page: shouldFetchAll ? 1 : page,
         limit: effectiveLimit,
-        sort: { createdAt: -1 },
+        sort: { createdAt: -1 } as const,
         populate: [
             'roles',
             'nativeLanguage',
@@ -117,35 +128,39 @@ export function useUsersWithPagination(initialPage = 1, initialLimit = 10) {
                 ],
             },
         ],
-    };
+    }), [shouldFetchAll, page, effectiveLimit]);
 
     // Build filter based on userStatus to fetch correct users from server
     // username/email/country are handled client-side — server only accepts exact String match
-    const filter: any = {
-        ...(selectedRoleId && { rolesIds: selectedRoleId }),
-        ...(searchFilters.isActive !== 'all' && { isActive: searchFilters.isActive === 'active' }),
-    };
+    const filter = useMemo(() => {
+        const f: any = {
+            ...(selectedRoleId && { rolesIds: selectedRoleId }),
+            ...(searchFilters.isActive !== 'all' && { isActive: searchFilters.isActive === 'active' }),
+        };
 
-    if (searchFilters.membershipStatus === 'paid') {
-        filter.rolesNames = ['PAID_MEMBER'];
-    }
-    else if (searchFilters.membershipStatus === 'promo') {
-        filter.rolesNames = ['PROMO_MEMBER'];
-    }
+        if (searchFilters.membershipStatus === 'paid') {
+            f.rolesNames = ['PAID_MEMBER'];
+        }
+        else if (searchFilters.membershipStatus === 'promo') {
+            f.rolesNames = ['PROMO_MEMBER'];
+        }
 
-    // Add isDeactivated, isAdminBlocked, and isDel filters based on userStatus
-    if (searchFilters.userStatus === 'active') {
-        filter.isActive = true;
-        filter.isDel = false;
-    }
-    else if (searchFilters.userStatus === 'deactivated') {
-        filter.isDeactivated = true;
-        filter.isDel = true;
-    }
-    else if (searchFilters.userStatus === 'blocked') {
-        filter.isAdminBlocked = true;
-        filter.isDel = true;
-    }
+        // Add isDeactivated, isAdminBlocked, and isDel filters based on userStatus
+        if (searchFilters.userStatus === 'active') {
+            f.isActive = true;
+            f.isDel = false;
+        }
+        else if (searchFilters.userStatus === 'deactivated') {
+            f.isDeactivated = true;
+            f.isDel = true;
+        }
+        else if (searchFilters.userStatus === 'blocked') {
+            f.isAdminBlocked = true;
+            f.isDel = true;
+        }
+
+        return f;
+    }, [selectedRoleId, searchFilters.isActive, searchFilters.membershipStatus, searchFilters.userStatus]);
 
     const { users: rawUsers, loading, error, refetch, totalDocs: serverTotalDocs, totalPages: serverTotalPages, hasNextPage: serverHasNextPage, hasPrevPage: serverHasPrevPage } = useGetUsers(filter, options);
 
@@ -575,8 +590,10 @@ export function useAdminUnblockUser() {
 export function useGetBlocks() {
     const { t } = useTranslate('user');
 
+    const variables = useMemo(() => ({ options: {} }), []);
+
     const { data, loading, error, refetch } = useQuery<getBlocksQuery>(getBlocksDocument, {
-        variables: { options: {} },
+        variables,
         fetchPolicy: 'network-only',
     });
 

@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@cyberskill/shared/react/apollo-client';
 import { toast } from '@cyberskill/shared/react/toast';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import type {
     createCurrencyMutation,
@@ -25,11 +25,22 @@ import {
 import { useTranslate } from '#shared/i18n';
 
 export function useGetCurrencies(filter?: getCurrenciesQueryVariables['filter'], options?: getCurrenciesQueryVariables['options']) {
+    const serializedFilter = JSON.stringify(filter);
+    const serializedOptions = JSON.stringify(options);
+
+    const memoizedFilter = useMemo(() => {
+        return serializedFilter ? JSON.parse(serializedFilter) : undefined;
+    }, [serializedFilter]);
+
+    const memoizedOptions = useMemo(() => {
+        return serializedOptions ? JSON.parse(serializedOptions) : undefined;
+    }, [serializedOptions]);
+
     const { data, loading, refetch } = useQuery<getCurrenciesQuery, getCurrenciesQueryVariables>(
         getCurrenciesDocument,
         {
-            variables: { filter, options },
-            fetchPolicy: 'network-only',
+            variables: { filter: memoizedFilter, options: memoizedOptions },
+            fetchPolicy: 'cache-first',
         },
     );
     const currencies = data?.getCurrencies?.result?.docs || [];
