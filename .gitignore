@@ -1,6 +1,8 @@
 .DS_Store
 .react-router
 build
+.agent
+.cursorrules
 node_modules
 *.env
 *.tsbuildinfo

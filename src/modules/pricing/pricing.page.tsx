@@ -33,6 +33,12 @@ export default function PricingPage() {
     });
     const { setHeader } = usePortal();
     const [ipCountries, setIpCountries] = useState<Record<string, string>>({});
+    const ipCountriesRef = useRef(ipCountries);
+
+    useEffect(() => {
+        ipCountriesRef.current = ipCountries;
+    }, [ipCountries]);
+
     const [selectedView, setSelectedView] = useState<'pricing' | 'country-config' | 'reports'>('pricing');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -56,7 +62,7 @@ export default function PricingPage() {
             const newIpCountries: Record<string, string> = {};
             const uniqueIps = [...new Set(paidOrders.map(o => o.user?.lastLoginIp).filter(Boolean))] as string[];
 
-            const ipsToLoad = uniqueIps.filter(ip => !ipCountries[ip]);
+            const ipsToLoad = uniqueIps.filter(ip => !ipCountriesRef.current[ip]);
 
             if (ipsToLoad.length === 0)
                 return;
@@ -86,7 +92,6 @@ export default function PricingPage() {
         if (paidOrders.length > 0 && countries.length > 0) {
             loadIpCountries();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [paidOrders, countries]);
 
     const filter = useMemo(() => {

@@ -1,4 +1,5 @@
 import { useQuery } from '@cyberskill/shared/react/apollo-client';
+import { useMemo } from 'react';
 
 import type {
     getStateQuery,
@@ -13,12 +14,23 @@ export function useGetStates(
     filter?: getStatesQueryVariables['filter'],
     options?: getStatesQueryVariables['options'],
 ) {
+    const serializedFilter = JSON.stringify(filter);
+    const serializedOptions = JSON.stringify(options);
+
+    const memoizedFilter = useMemo(() => {
+        return serializedFilter ? JSON.parse(serializedFilter) : undefined;
+    }, [serializedFilter]);
+
+    const memoizedOptions = useMemo(() => {
+        return serializedOptions ? JSON.parse(serializedOptions) : undefined;
+    }, [serializedOptions]);
+
     const { data, loading, refetch } = useQuery<
         getStatesQuery,
         getStatesQueryVariables
     >(getStatesDocument, {
-        variables: { filter, options },
-        fetchPolicy: 'network-only',
+        variables: { filter: memoizedFilter, options: memoizedOptions },
+        fetchPolicy: 'cache-first',
     });
     const states = data?.getStates?.result?.docs || [];
 

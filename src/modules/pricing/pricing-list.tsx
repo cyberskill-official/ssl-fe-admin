@@ -2,6 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 import { Check, Edit2, Globe, Plus, Trash2, Users, X } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useMemo } from 'react';
 
 import type { T_Pricing } from '#shared/graphql';
 
@@ -65,7 +66,7 @@ export function PricingList({
         return price + (price * rate) / 100;
     };
 
-    const columns: ColumnDef<T_Pricing>[] = [
+    const columns: ColumnDef<T_Pricing>[] = useMemo(() => [
         {
             accessorKey: 'countryId',
             header: t('country'),
@@ -211,7 +212,7 @@ export function PricingList({
                 );
             },
         },
-    ];
+    ], [t, countries, onEditPrice, onDeletePrice, onToggleStatus, updatingStatusId]);
 
     return (
         <div className="space-y-6">

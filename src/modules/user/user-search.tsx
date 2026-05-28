@@ -1,4 +1,4 @@
-import { Check, Clock, CreditCard, Filter, Globe, Search, Trash2, Users, X } from 'lucide-react';
+import { Check, Clock, CreditCard, Filter, Globe, Search, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useGetCountries } from '#modules/location/country/country.hook';

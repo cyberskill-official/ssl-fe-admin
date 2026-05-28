@@ -11,8 +11,19 @@ export function useGetOrders(
     filter?: Record<string, unknown>,
     options?: Record<string, unknown>,
 ) {
+    const serializedFilter = JSON.stringify(filter);
+    const serializedOptions = JSON.stringify(options);
+
+    const memoizedFilter = useMemo(() => {
+        return serializedFilter ? JSON.parse(serializedFilter) : undefined;
+    }, [serializedFilter]);
+
+    const memoizedOptions = useMemo(() => {
+        return serializedOptions ? JSON.parse(serializedOptions) : undefined;
+    }, [serializedOptions]);
+
     const { data, loading, refetch } = useQuery(getOrdersDocument, {
-        variables: { filter, options },
+        variables: { filter: memoizedFilter, options: memoizedOptions },
         fetchPolicy: 'network-only',
     });
 
