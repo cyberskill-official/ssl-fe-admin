@@ -16,6 +16,7 @@ import { mergeRegister } from '@lexical/utils';
 import {
     $createParagraphNode,
     $createTextNode,
+    $getRoot,
     $getSelection,
     $isElementNode,
     $isRangeSelection,
@@ -54,6 +55,9 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { useUpload } from '#modules/upload/upload.hook';
+import { E_UploadEntity, E_UploadType } from '#shared/graphql';
+
 import { Button } from '../button';
 import { LinkEditor } from './link-editor';
 import { $createImageNode, $createVideoNode } from './media';
@@ -62,6 +66,8 @@ const ICON_SIZE = 16;
 
 export default function Toolbar() {
     const [editor] = useLexicalComposerContext();
+    const { upload } = useUpload();
+    const [isUploading, setIsUploading] = useState(false);
     const [isBold, setIsBold] = useState(false);
     const [isItalic, setIsItalic] = useState(false);
     const [isUnderline, setIsUnderline] = useState(false);
@@ -343,27 +349,45 @@ export default function Toolbar() {
     const handleImageInsert = (e?: React.MouseEvent) => {
         e?.stopPropagation();
         e?.preventDefault();
+        if (isUploading)
+            return;
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const imageSrc = event.target?.result as string;
-                    editor.update(() => {
-                        const selection = $getSelection();
-                        if ($isRangeSelection(selection)) {
-                            const imageNode = $createImageNode({
-                                src: imageSrc,
-                                altText: file.name || 'Uploaded image',
-                            });
-                            selection.insertNodes([imageNode]);
-                        }
+                try {
+                    setIsUploading(true);
+                    const uploadedUrl = await upload({
+                        type: E_UploadType.IMAGE,
+                        entity: E_UploadEntity.USER,
+                        entityId: null,
+                        file,
                     });
-                };
-                reader.readAsDataURL(file);
+                    if (uploadedUrl) {
+                        editor.update(() => {
+                            let selection = $getSelection();
+                            if (!$isRangeSelection(selection)) {
+                                const root = $getRoot();
+                                selection = root.selectEnd();
+                            }
+                            if ($isRangeSelection(selection)) {
+                                const imageNode = $createImageNode({
+                                    src: uploadedUrl,
+                                    altText: file.name || 'Uploaded image',
+                                });
+                                selection.insertNodes([imageNode]);
+                            }
+                        });
+                    }
+                }
+                catch (error) {
+                    console.error('Failed to upload image to Bunny:', error);
+                }
+                finally {
+                    setIsUploading(false);
+                }
             }
         };
         input.click();
@@ -372,30 +396,48 @@ export default function Toolbar() {
     const handleVideoInsert = (e?: React.MouseEvent) => {
         e?.stopPropagation();
         e?.preventDefault();
+        if (isUploading)
+            return;
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'video/*';
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const videoSrc = event.target?.result as string;
-                    editor.update(() => {
-                        const selection = $getSelection();
-                        if ($isRangeSelection(selection)) {
-                            const videoNode = $createVideoNode(
-                                videoSrc,
-                                undefined,
-                                undefined,
-                                file.name || 'Uploaded video',
-                                `Video: ${file.name}`,
-                            );
-                            selection.insertNodes([videoNode]);
-                        }
+                try {
+                    setIsUploading(true);
+                    const uploadedUrl = await upload({
+                        type: E_UploadType.VIDEO,
+                        entity: E_UploadEntity.USER,
+                        entityId: null,
+                        file,
                     });
-                };
-                reader.readAsDataURL(file);
+                    if (uploadedUrl) {
+                        editor.update(() => {
+                            let selection = $getSelection();
+                            if (!$isRangeSelection(selection)) {
+                                const root = $getRoot();
+                                selection = root.selectEnd();
+                            }
+                            if ($isRangeSelection(selection)) {
+                                const videoNode = $createVideoNode(
+                                    uploadedUrl,
+                                    undefined,
+                                    undefined,
+                                    file.name || 'Uploaded video',
+                                    `Video: ${file.name}`,
+                                );
+                                selection.insertNodes([videoNode]);
+                            }
+                        });
+                    }
+                }
+                catch (error) {
+                    console.error('Failed to upload video to Bunny:', error);
+                }
+                finally {
+                    setIsUploading(false);
+                }
             }
         };
         input.click();
@@ -634,6 +676,7 @@ export default function Toolbar() {
                 <Button
                     variant="ghost"
                     size="sm"
+                    disabled={isUploading}
                     onClick={e => handleImageInsert(e)}
                     className="h-8 w-8 p-0"
                     title="Insert Image"
@@ -643,6 +686,7 @@ export default function Toolbar() {
                 <Button
                     variant="ghost"
                     size="sm"
+                    disabled={isUploading}
                     onClick={e => handleVideoInsert(e)}
                     className="h-8 w-8 p-0"
                     title="Insert Video"
