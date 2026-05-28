@@ -143,7 +143,14 @@ export function DataTable<TData, TValue>({
                                         <TableRow
                                             key={row.id || idx}
                                             className="transition-colors duration-200 hover:bg-purple-100/40 dark:hover:bg-purple-900/30 rounded-xl text-gray-900 dark:text-gray-100"
-                                            style={{ animation: `fadeInUp 0.5s ${idx * 0.04}s both` }}
+                                            style={
+                                                idx < 10
+                                                    ? {
+                                                            animation: `fadeInUp 0.4s ${idx * 0.03}s both`,
+                                                            willChange: 'transform, opacity',
+                                                        }
+                                                    : undefined
+                                            }
                                         >
                                             {row.getVisibleCells().map(cell => (
                                                 <TableCell key={cell.id}>

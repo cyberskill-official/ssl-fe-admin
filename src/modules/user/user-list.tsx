@@ -16,7 +16,7 @@ import {
     UserCheck,
     X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { T_User } from '#shared/graphql';
 
@@ -33,6 +33,98 @@ import type { I_UserListProps } from './user.type';
 
 import { UserPricingCell } from './user-pricing-cell';
 import { useGetBlocks, useGetSubscriptionPrice, useGetUsers } from './user.hook';
+
+function _formatDate(date: string | Date) {
+    return new Date(date).toLocaleDateString();
+}
+
+function _formatDateTime(date: string | Date) {
+    const dateObj = new Date(date);
+    return `${dateObj.toLocaleDateString()} ${dateObj.toLocaleTimeString(
+        [],
+        { hour: '2-digit', minute: '2-digit' },
+    )}`;
+}
+
+function getAgeVerificationStatus(user: T_User) {
+    if (!user.ageVerify) {
+        return 'not_submitted';
+    }
+    return user.ageVerify.status?.toLowerCase() || 'unknown';
+}
+
+function _getNativeLanguageName(user: T_User, t: any) {
+    if (!user.nativeLanguage?.name) {
+        return t('na');
+    }
+    const languageName = user.nativeLanguage.name;
+    return languageName.charAt(0).toUpperCase() + languageName.slice(1);
+}
+
+function _getCountryName(user: T_User, ipCountries: Record<string, string>, t: any) {
+    if (user.lastLoginIp && ipCountries[user.lastLoginIp]) {
+        const countryName = ipCountries[user.lastLoginIp]!;
+        return countryName.charAt(0).toUpperCase() + countryName.slice(1);
+    }
+    if (!user.partner1?.location?.country?.name) {
+        return t('na');
+    }
+    const countryName = user.partner1.location.country.name;
+    return countryName.charAt(0).toUpperCase() + countryName.slice(1);
+}
+
+function _getRoles(user: T_User) {
+    if (!user.roles || user.roles.length === 0) {
+        return [];
+    }
+
+    return user.roles
+        .filter(role => role !== null && role?.name)
+        .map(role => ({
+            name: role?.name || 'USER',
+            isPaid: role?.name === 'PAID_MEMBER' || role?.name === 'PROMO_MEMBER',
+        }));
+}
+
+function _getRegisterStepLabel(registerStep: string | null | undefined, t: any) {
+    if (!registerStep) {
+        return t('na');
+    }
+    switch (registerStep) {
+        case E_RegisterStep.VERIFY_EMAIL:
+            return t('Verify Email');
+        case E_RegisterStep.PERSONAL_INFO:
+            return t('Personal Info');
+        case E_RegisterStep.PREFERENCES:
+            return t('Preferences');
+        case E_RegisterStep.MEMBERSHIP:
+            return t('Membership');
+        case E_RegisterStep.COMPLETE:
+            return t('Complete');
+        default:
+            return registerStep;
+    }
+}
+
+function _getRegisterStepBadgeColor(registerStep?: string | null) {
+    if (!registerStep) {
+        return 'bg-gray-100 text-gray-600';
+    }
+    switch (registerStep) {
+        case E_RegisterStep.VERIFY_EMAIL:
+            return 'bg-yellow-100 text-yellow-800';
+        case E_RegisterStep.PERSONAL_INFO:
+            return 'bg-blue-100 text-blue-800';
+        case E_RegisterStep.PREFERENCES:
+            return 'bg-purple-100 text-purple-800';
+        case E_RegisterStep.MEMBERSHIP:
+            return 'bg-orange-100 text-orange-800';
+        case E_RegisterStep.COMPLETE:
+            return 'bg-green-100 text-green-800';
+        default:
+            return 'bg-gray-100 text-gray-600';
+    }
+}
 
 export function UserList({
     users,
@@ -89,13 +181,6 @@ export function UserList({
         { isDel: false },
         { page: 1, limit: totalDocs || 10000, skip: !isExporting },
     );
-
-    const getAgeVerificationStatus = (user: T_User) => {
-        if (!user.ageVerify) {
-            return 'not_submitted';
-        }
-        return user.ageVerify.status?.toLowerCase() || 'unknown';
-    };
 
     const exportEmails = async () => {
         setIsExporting(true);
@@ -182,92 +267,7 @@ export function UserList({
         console.warn('Current pricing state:', pricing);
     }, [pricing]);
 
-    const _formatDate = (date: string | Date) => {
-        return new Date(date).toLocaleDateString();
-    };
-
-    const _formatDateTime = (date: string | Date) => {
-        const dateObj = new Date(date);
-        return `${dateObj.toLocaleDateString()} ${dateObj.toLocaleTimeString(
-            [],
-            { hour: '2-digit', minute: '2-digit' },
-        )}`;
-    };
-
-    const _getNativeLanguageName = (user: T_User) => {
-        if (!user.nativeLanguage?.name) {
-            return t('na');
-        }
-        const languageName = user.nativeLanguage.name;
-        return languageName.charAt(0).toUpperCase() + languageName.slice(1);
-    };
-
-    const _getCountryName = (user: T_User) => {
-        if (user.lastLoginIp && ipCountries[user.lastLoginIp]) {
-            const countryName = ipCountries[user.lastLoginIp]!;
-            return countryName.charAt(0).toUpperCase() + countryName.slice(1);
-        }
-        if (!user.partner1?.location?.country?.name) {
-            return t('na');
-        }
-        const countryName = user.partner1.location.country.name;
-        return countryName.charAt(0).toUpperCase() + countryName.slice(1);
-    };
-
-    const _getRoles = (user: T_User) => {
-        if (!user.roles || user.roles.length === 0) {
-            return [];
-        }
-
-        return user.roles
-            .filter(role => role !== null && role?.name)
-            .map(role => ({
-                name: role?.name || 'USER',
-                isPaid: role?.name === 'PAID_MEMBER' || role?.name === 'PROMO_MEMBER',
-            }));
-    };
-
-    const _getRegisterStepLabel = (registerStep?: string | null) => {
-        if (!registerStep) {
-            return t('na');
-        }
-        switch (registerStep) {
-            case E_RegisterStep.VERIFY_EMAIL:
-                return t('Verify Email');
-            case E_RegisterStep.PERSONAL_INFO:
-                return t('Personal Info');
-            case E_RegisterStep.PREFERENCES:
-                return t('Preferences');
-            case E_RegisterStep.MEMBERSHIP:
-                return t('Membership');
-            case E_RegisterStep.COMPLETE:
-                return t('Complete');
-            default:
-                return registerStep;
-        }
-    };
-
-    const _getRegisterStepBadgeColor = (registerStep?: string | null) => {
-        if (!registerStep) {
-            return 'bg-gray-100 text-gray-600';
-        }
-        switch (registerStep) {
-            case E_RegisterStep.VERIFY_EMAIL:
-                return 'bg-yellow-100 text-yellow-800';
-            case E_RegisterStep.PERSONAL_INFO:
-                return 'bg-blue-100 text-blue-800';
-            case E_RegisterStep.PREFERENCES:
-                return 'bg-purple-100 text-purple-800';
-            case E_RegisterStep.MEMBERSHIP:
-                return 'bg-orange-100 text-orange-800';
-            case E_RegisterStep.COMPLETE:
-                return 'bg-green-100 text-green-800';
-            default:
-                return 'bg-gray-100 text-gray-600';
-        }
-    };
-
-    const columns: ColumnDef<T_User>[] = [
+    const columns: ColumnDef<T_User>[] = useMemo(() => [
         {
             accessorKey: 'username',
             header: t('username'),
@@ -302,7 +302,7 @@ export function UserList({
                 const registerStep = row.getValue('registerStep') as string;
                 return (
                     <Badge className={_getRegisterStepBadgeColor(registerStep)}>
-                        {_getRegisterStepLabel(registerStep)}
+                        {_getRegisterStepLabel(registerStep, t)}
                     </Badge>
                 );
             },
@@ -330,7 +330,7 @@ export function UserList({
                         className="text-sm"
                         title={countryFromIp ? `Based on IP: ${user.lastLoginIp}` : 'Based on signup location'}
                     >
-                        {_getCountryName(user)}
+                        {_getCountryName(user, ipCountries, t)}
                     </span>
                 );
             },
@@ -340,7 +340,7 @@ export function UserList({
             header: t('Language'),
             cell: ({ row }) => (
                 <span className="text-sm">
-                    {_getNativeLanguageName(row.original)}
+                    {_getNativeLanguageName(row.original, t)}
                 </span>
             ),
         },
@@ -767,7 +767,16 @@ export function UserList({
                 );
             },
         },
-    ];
+    ], [
+        t,
+        ipCountries,
+        onChangePaymentDate,
+        onEditUser,
+        onBlockUser,
+        onUnblockUser,
+        onPermanentDelete,
+        onRestoreUser,
+    ]);
 
     if (loading) {
         return (

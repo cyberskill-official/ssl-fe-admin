@@ -25,7 +25,7 @@ import {
     Users,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { E_TagType, T_Tag } from '#shared/graphql';
 
@@ -160,7 +160,7 @@ export function TagList({
     };
 
     // Table columns for DataTable
-    const columns: ColumnDef<T_Tag>[] = [
+    const columns: ColumnDef<T_Tag>[] = useMemo(() => [
         {
             accessorKey: 'name',
             header: t('name'),
@@ -245,7 +245,7 @@ export function TagList({
                 </div>
             ),
         },
-    ];
+    ], [t, onEditTag, onDeleteTag]);
 
     return (
         <div className="space-y-6">
