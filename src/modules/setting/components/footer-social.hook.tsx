@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@cyberskill/shared/react/apollo-client';
 import { toast } from '@cyberskill/shared/react/toast';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type {
     createSettingMutation,
@@ -27,35 +27,50 @@ import type { I_Platform } from './footer-social.type';
 export function useGetSetting() {
     const [platforms, setPlatforms] = useState<I_Platform[]>([]);
     const [hasExistingData, setHasExistingData] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    const { loading } = useQuery<getSettingQuery, getSettingQueryVariables>(
+    const { loading, data, error } = useQuery<getSettingQuery, getSettingQueryVariables>(
         getSettingDocument,
         {
             variables: {
                 filter: { type: E_SettingType.FOOTER },
             },
-            onCompleted: (response) => {
-                if (response.getSetting?.result?.value
-                    && 'socialLinks' in response.getSetting.result.value
-                    && response.getSetting.result.value.socialLinks) {
-                    const existingLinks = response.getSetting.result.value.socialLinks;
-                    const formattedPlatforms = existingLinks
-                        .filter((link): link is NonNullable<typeof link> & { type: E_SocialPlatform } => link !== null && link.type !== null)
-                        .map((link, index) => ({
-                            id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${index}`,
-                            type: link.type,
-                            url: link.url || '',
-                        }));
-
-                    setPlatforms(formattedPlatforms);
-                    setHasExistingData(true);
-                }
-            },
-            onError: (error) => {
-                toast.error(error.message);
-            },
         },
     );
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error.message);
+        }
+    }, [error]);
+
+    useEffect(() => {
+        if (isLoaded) {
+            return;
+        }
+        if (!loading && data) {
+            // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+            setIsLoaded(true);
+            const settingValue = data?.getSetting?.result?.value;
+            if (settingValue
+                && 'socialLinks' in settingValue
+                && settingValue.socialLinks) {
+                const existingLinks = settingValue.socialLinks;
+                const formattedPlatforms = existingLinks
+                    .filter((link): link is NonNullable<typeof link> & { type: E_SocialPlatform } => link !== null && link.type !== null)
+                    .map((link, index) => ({
+                        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${index}`,
+                        type: link.type,
+                        url: link.url || '',
+                    }));
+
+                // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+                setPlatforms(formattedPlatforms);
+                // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+                setHasExistingData(true);
+            }
+        }
+    }, [data, loading, isLoaded]);
 
     return {
         platforms,
