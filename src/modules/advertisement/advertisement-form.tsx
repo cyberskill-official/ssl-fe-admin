@@ -406,7 +406,7 @@ export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creatin
                         </motion.div>
                         {/* Description Field */}
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.22 }}>
-                            <FloatLabel label={t('descripstion')}>
+                            <FloatLabel label={t('description')}>
                                 <Textarea
                                     {...register('description')}
                                     className="min-h-[80px] text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300"
