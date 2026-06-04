@@ -26,8 +26,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Controller, useForm } from 'react-hook-form';
+import type { FieldPath } from 'react-hook-form';
 
-import type { Input_CreateDestination, Input_UpdateDestination, T_Destination } from '#shared/graphql';
+import type { Input_CreateDestination, Input_UpdateDestination, T_Destination, T_City } from '#shared/graphql';
 
 import { useGetCountries } from '#modules/location';
 import { useGetCities } from '#modules/location/city/city.hook';
@@ -46,6 +47,12 @@ import { cn } from '#shared/util';
 import type { I_DestinationFormData, I_DestinationFormProps, I_DestinationFormRef, T_Hotel } from './destination.type';
 
 import { useGetDestination } from './destination.hook';
+
+interface I_MapTilerFeature {
+    place_type?: string[];
+    place_name?: string;
+    text?: string;
+}
 
 const FORM_DEFAULT_VALUES: I_DestinationFormData = {
     type: E_DestinationType.CLUB,
@@ -104,7 +111,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
     const [socialShareImage, setSocialShareImage] = useState<string | null>(null);
     const [showMapPicker, setShowMapPicker] = useState(false);
     const [showHotelMapPicker, setShowHotelMapPicker] = useState<number | null>(null);
-    const [hotelCitiesCache, setHotelCitiesCache] = useState<Record<string, any[]>>({});
+    const [hotelCitiesCache, setHotelCitiesCache] = useState<Record<string, T_City[]>>({});
     const [shouldRefetchCities, setShouldRefetchCities] = useState(false);
     const [refreshingDestination, setRefreshingDestination] = useState(false);
 
@@ -522,7 +529,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
             if (geo?.features && geo.features.length > 0) {
                 let bestAddress = '';
 
-                const addressFeature = geo.features.find((feature: any) =>
+                const addressFeature = geo.features.find((feature: I_MapTilerFeature) =>
                     feature.place_type?.includes('address')
                     || feature.place_type?.includes('poi')
                     || feature.place_type?.includes('postcode'),
@@ -533,7 +540,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 }
 
                 if (!bestAddress) {
-                    const detailedFeature = geo.features.reduce((prev: any, curr: any) => {
+                    const detailedFeature = geo.features.reduce((prev: I_MapTilerFeature, curr: I_MapTilerFeature) => {
                         const prevLength = prev?.place_name?.length || 0;
                         const currLength = curr?.place_name?.length || 0;
                         return currLength > prevLength ? curr : prev;
@@ -546,7 +553,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 }
 
                 setValue('location.address', bestAddress);
-                const countryFeature = geo.features.find((feature: any) =>
+                const countryFeature = geo.features.find((feature: I_MapTilerFeature) =>
                     feature.place_type?.includes('country'),
                 );
 
@@ -560,7 +567,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                         setValue('location.countryId', foundCountry.id);
 
                         setShouldRefetchCities(true);
-                        const cityFeature = geo.features.find((feature: any) =>
+                        const cityFeature = geo.features.find((feature: I_MapTilerFeature) =>
                             feature.place_type?.includes('place') || feature.place_type?.includes('locality'),
                         );
 
@@ -605,7 +612,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
             if (geo?.features && geo.features.length > 0) {
                 let bestAddress = '';
 
-                const addressFeature = geo.features.find((feature: any) =>
+                const addressFeature = geo.features.find((feature: I_MapTilerFeature) =>
                     feature.place_type?.includes('address')
                     || feature.place_type?.includes('poi')
                     || feature.place_type?.includes('postcode'),
@@ -616,7 +623,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 }
 
                 if (!bestAddress) {
-                    const detailedFeature = geo.features.reduce((prev: any, curr: any) => {
+                    const detailedFeature = geo.features.reduce((prev: I_MapTilerFeature, curr: I_MapTilerFeature) => {
                         const prevLength = prev?.place_name?.length || 0;
                         const currLength = curr?.place_name?.length || 0;
                         return currLength > prevLength ? curr : prev;
@@ -629,7 +636,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 }
 
                 setValue(`nearbyHotels.${hotelIndex}.location.address`, bestAddress);
-                const countryFeature = geo.features.find((feature: any) =>
+                const countryFeature = geo.features.find((feature: I_MapTilerFeature) =>
                     feature.place_type?.includes('country'),
                 );
 
@@ -641,14 +648,14 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
 
                     if (foundCountry) {
                         setValue(`nearbyHotels.${hotelIndex}.location.countryId`, foundCountry.id);
-                        const cityFeature = geo.features.find((feature: any) =>
+                        const cityFeature = geo.features.find((feature: I_MapTilerFeature) =>
                             feature.place_type?.includes('place') || feature.place_type?.includes('locality'),
                         );
 
                         if (cityFeature) {
                             const cityName = cityFeature.text;
                             const hotelCities = hotelCitiesCache[foundCountry.id] || [];
-                            const foundCity = hotelCities.find((c: any) =>
+                            const foundCity = hotelCities.find((c) =>
                                 c.name?.toLowerCase() === cityName.toLowerCase(),
                             );
 
@@ -1631,7 +1638,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                             className="border border-gray-300 dark:border-gray-600 rounded-lg"
                                                             contentClassName="min-h-[120px] outline-none p-3 text-gray-900 dark:text-gray-100 text-sm"
                                                         />
-                                                        <input type="hidden" {...register(`${key}.reason` as any)} />
+                                                        <input type="hidden" {...register(`${key}.reason` as FieldPath<I_DestinationFormData>)} />
                                                         {errors[key]?.reason && (
                                                             <p className="text-red-500 text-xs mt-1">
                                                                 {errors[key]?.reason as string}
@@ -1854,8 +1861,8 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                         return (
                                                                             <AutocompleteSelect
                                                                                 options={hotelCities
-                                                                                    ?.filter((city: any) => city !== null && city !== undefined)
-                                                                                    ?.map((city: any) => ({
+                                                                                    ?.filter((city) => city !== null && city !== undefined)
+                                                                                    ?.map((city) => ({
                                                                                         id: city.id!,
                                                                                         name: city.name!,
                                                                                     })) || []}
@@ -2008,7 +2015,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                             )}
                                                             {watch(`nearbyHotels.${index}.location.cityId`) && (
                                                                 <Badge variant="outline" className="text-green-600 border-green-300 dark:text-green-400 dark:border-green-600">
-                                                                    {(hotelCitiesCache[watch(`nearbyHotels.${index}.location.countryId`)] || [])?.find((c: any) => c.id === watch(`nearbyHotels.${index}.location.cityId`))?.name || 'Unknown City'}
+                                                                    {(hotelCitiesCache[watch(`nearbyHotels.${index}.location.countryId`)] || [])?.find((c) => c.id === watch(`nearbyHotels.${index}.location.cityId`))?.name || 'Unknown City'}
                                                                 </Badge>
                                                             )}
                                                         </div>
