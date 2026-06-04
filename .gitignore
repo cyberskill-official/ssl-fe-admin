@@ -8,3 +8,4 @@ node_modules
 *.tsbuildinfo
 .simple-git-hooks.json
 .git.bak
+.simple-git-hooks.json

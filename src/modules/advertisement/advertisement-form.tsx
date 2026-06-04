@@ -19,6 +19,76 @@ import { useGetBlogs } from '../blog/blog.hook';
 import { useGetDestinations } from '../destination/destination.hook';
 import { useUpload } from '../upload/upload.hook';
 
+function parseYYYYMMDDToLocalDate(dateStr: string | null | undefined): Date | undefined {
+    if (!dateStr)
+        return undefined;
+
+    if (dateStr.includes('T') || dateStr.includes(':')) {
+        const parsed = new Date(dateStr);
+        return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length < 3) {
+        const parsed = new Date(dateStr);
+        return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+
+    if (year === undefined || month === undefined || day === undefined || Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+        return undefined;
+    }
+
+    return new Date(year, month - 1, day);
+}
+
+function parseYYYYMMDDToUTCDate(dateStr: string | null | undefined): Date | undefined {
+    if (!dateStr)
+        return undefined;
+
+    if (dateStr.includes('T') || dateStr.includes(':')) {
+        const parsed = new Date(dateStr);
+        return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length < 3) {
+        const parsed = new Date(dateStr);
+        return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+
+    if (year === undefined || month === undefined || day === undefined || Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+        return undefined;
+    }
+
+    return new Date(Date.UTC(year, month - 1, day));
+}
+
+function formatLocalYYYYMMDD(date: Date | null | undefined): string {
+    if (!date || Number.isNaN(date.getTime()))
+        return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function formatUTCYYYYMMDD(date: Date | null | undefined): string {
+    if (!date || Number.isNaN(date.getTime()))
+        return '';
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updating, existingAdvertisements }: {
     onCreateSubmit: (data: Input_CreateAdvertisement) => void;
     onUpdateSubmit: (id: string, data: Input_UpdateAdvertisement) => void;
@@ -115,8 +185,12 @@ export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creatin
             return true;
         }
 
-        const start = new Date(selectedStartDate);
-        const end = new Date(endDate);
+        const start = parseYYYYMMDDToLocalDate(selectedStartDate);
+        const end = parseYYYYMMDDToLocalDate(endDate);
+
+        if (!start || !end) {
+            return true;
+        }
 
         return end >= start || t('end-date-before-start') || 'End date cannot be before start date';
     };
@@ -142,8 +216,8 @@ export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creatin
                         slot: advertisement.slot ?? undefined,
                         placementType: advertisement.placementType ?? E_AdvertisementPlacementType.DASHBOARD,
                         placementId: advertisement.placementId ?? '',
-                        startDate: advertisement.startDate ? new Date(advertisement.startDate).toISOString().slice(0, 10) : undefined,
-                        endDate: advertisement.endDate ? new Date(advertisement.endDate).toISOString().slice(0, 10) : undefined,
+                        startDate: advertisement.startDate ? formatUTCYYYYMMDD(new Date(advertisement.startDate)) : undefined,
+                        endDate: advertisement.endDate ? formatUTCYYYYMMDD(new Date(advertisement.endDate)) : undefined,
                     }
                 : FORM_DEFAULT_VALUES);
         },
@@ -204,8 +278,8 @@ export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creatin
             slot: data.placementType === E_AdvertisementPlacementType.DASHBOARD ? data.slot as E_AdvertisementSlot : undefined,
             placementType: data.placementType as E_AdvertisementPlacementType,
             placementId: placementId || '',
-            startDate: data.startDate ? new Date(data.startDate) : undefined,
-            endDate: data.endDate ? new Date(data.endDate) : undefined,
+            startDate: data.startDate ? parseYYYYMMDDToUTCDate(data.startDate) : undefined,
+            endDate: data.endDate ? parseYYYYMMDDToUTCDate(data.endDate) : undefined,
         };
 
         if (mode === E_FormMode.Update && currentAdvertisement?.id) {
@@ -474,10 +548,10 @@ export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creatin
                                 </label>
                                 <DatePicker
                                     label=""
-                                    value={watch('startDate') ? new Date(watch('startDate')) : undefined}
+                                    value={parseYYYYMMDDToLocalDate(watch('startDate'))}
                                     minDate={new Date()}
                                     onChange={(date) => {
-                                        setValue('startDate', date instanceof Date ? date.toISOString().slice(0, 10) : '');
+                                        setValue('startDate', date instanceof Date ? formatLocalYYYYMMDD(date) : '');
                                         trigger('startDate');
                                     }}
                                 />
@@ -494,10 +568,10 @@ export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creatin
                                 </label>
                                 <DatePicker
                                     label=""
-                                    value={watch('endDate') ? new Date(watch('endDate')) : undefined}
-                                    minDate={selectedStartDate ? new Date(selectedStartDate) : new Date()}
+                                    value={parseYYYYMMDDToLocalDate(watch('endDate'))}
+                                    minDate={parseYYYYMMDDToLocalDate(selectedStartDate) ?? new Date()}
                                     onChange={(date) => {
-                                        setValue('endDate', date instanceof Date ? date.toISOString().slice(0, 10) : '');
+                                        setValue('endDate', date instanceof Date ? formatLocalYYYYMMDD(date) : '');
                                         trigger('endDate');
                                     }}
                                 />

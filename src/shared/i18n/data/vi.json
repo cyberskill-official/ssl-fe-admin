@@ -14,6 +14,11 @@
             "toast": {
                 "success": "Đăng xuất thành công"
             }
+        },
+        "sessionConflict": {
+            "title": "Xung đột phiên đăng nhập",
+            "description": "Bạn đã đăng nhập bằng một tài khoản khác ở trình duyệt/tab khác. Để tránh ghi nhận sai thông tin thao tác (Created by), các thao tác hiện tại đã bị tạm ngừng. Vui lòng tải lại trang.",
+            "reloadButton": "Tải lại trang"
         }
     },
     "tag": {

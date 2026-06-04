@@ -35,25 +35,24 @@ export function TagPage() {
         return () => setHeader(null);
     }, [setHeader, t]);
 
+    const shouldFetchAll = !!search;
+
+    const [knownTotal, setKnownTotal] = useState(1000);
+
     const filter = useMemo(() => {
         const filterObj: {
             isDel: boolean;
-            name?: string;
             type?: E_TagType;
         } = {
             isDel: false,
         };
-
-        if (search) {
-            filterObj.name = search;
-        }
 
         if (selectedType !== 'ALL') {
             filterObj.type = selectedType;
         }
 
         return filterObj;
-    }, [search, selectedType]);
+    }, [selectedType]);
 
     const options = useMemo(() => {
         const sortValue = sortOrder === 'desc' ? -1 : 1;
@@ -67,34 +66,77 @@ export function TagPage() {
         }
 
         return {
-            page,
-            limit: pageSize,
+            page: shouldFetchAll ? 1 : page,
+            limit: shouldFetchAll ? knownTotal : pageSize,
             sort: sortObj,
             populate: ['createdBy'],
         };
-    }, [page, pageSize, sortField, sortOrder]);
+    }, [shouldFetchAll, page, pageSize, knownTotal, sortField, sortOrder]);
 
     const {
         tags: rawTags,
-        totalDocs,
+        totalDocs: serverTotalDocs,
         loading,
         refetch,
     } = useGetTags(filter, options);
 
-    const tags = useMemo(() => {
-        if (!rawTags.length) {
+    useEffect(() => {
+        if (serverTotalDocs > 0) {
+            // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+            setKnownTotal(prev => Math.max(prev, serverTotalDocs));
+        }
+    }, [serverTotalDocs]);
+
+    const filteredTags = useMemo(() => {
+        if (!search) {
             return rawTags;
         }
+        return rawTags.filter(tag =>
+            tag.name?.toLowerCase().includes(search.toLowerCase()),
+        );
+    }, [rawTags, search]);
+
+    const sortedTags = useMemo(() => {
+        if (!filteredTags.length) {
+            return filteredTags;
+        }
         if (sortField === 'usageCount') {
-            return [...rawTags].sort((a, b) => {
+            return [...filteredTags].sort((a, b) => {
                 const aCount = Number(a.usageCount) || 0;
                 const bCount = Number(b.usageCount) || 0;
                 return sortOrder === 'desc' ? bCount - aCount : aCount - bCount;
             });
         }
 
-        return rawTags;
-    }, [rawTags, sortField, sortOrder]);
+        return filteredTags;
+    }, [filteredTags, sortField, sortOrder]);
+
+    const paginatedData = useMemo(() => {
+        if (shouldFetchAll) {
+            const totalFiltered = sortedTags.length;
+            const totalPagesCalculated = Math.ceil(totalFiltered / pageSize);
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const paginatedTags = sortedTags.slice(startIndex, endIndex);
+
+            return {
+                tags: paginatedTags,
+                totalDocs: totalFiltered,
+                totalPages: totalPagesCalculated,
+                hasNextPage: page < totalPagesCalculated,
+                hasPrevPage: page > 1,
+            };
+        }
+        else {
+            return {
+                tags: sortedTags,
+                totalDocs: serverTotalDocs,
+                totalPages: Math.ceil(serverTotalDocs / pageSize),
+                hasNextPage: page * pageSize < serverTotalDocs,
+                hasPrevPage: page > 1,
+            };
+        }
+    }, [shouldFetchAll, sortedTags, page, pageSize, serverTotalDocs]);
 
     const { createTag, loading: creating } = useCreateTag();
     const { updateTag, loading: updating } = useUpdateTag();
@@ -174,12 +216,12 @@ export function TagPage() {
                     <TagList
                         sortField={sortField}
                         sortOrder={sortOrder}
-                        tags={tags}
+                        tags={paginatedData.tags}
                         loading={loading}
                         onEditTag={_handleEditTag}
                         onCreateTag={_handleCreateTag}
                         onDeleteTag={_handleDeleteTag}
-                        totalDocs={totalDocs}
+                        totalDocs={paginatedData.totalDocs}
                         page={page}
                         pageSize={pageSize}
                         onPageChange={_handlePageChange}

@@ -20,6 +20,7 @@ export function AdvertisementPage() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
+    const [status, setStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
     const [sortField, setSortField] = useState('createdAt');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [deletingAd, setDeletingAd] = useState<T_Advertisement | null>(null);
@@ -39,8 +40,12 @@ export function AdvertisementPage() {
         const filterObj: Record<string, unknown> = {};
         if (search)
             filterObj['name'] = search;
+        if (status === 'ACTIVE')
+            filterObj['isActive'] = true;
+        if (status === 'INACTIVE')
+            filterObj['isActive'] = false;
         return filterObj;
-    }, [search]);
+    }, [search, status]);
 
     const options = useMemo(() => ({
         page,
@@ -101,6 +106,11 @@ export function AdvertisementPage() {
 
     const _handleSearchChange = useCallback((value: string) => {
         setSearch(value);
+        setPage(1);
+    }, []);
+
+    const _handleStatusChange = useCallback((value: 'ALL' | 'ACTIVE' | 'INACTIVE') => {
+        setStatus(value);
         setPage(1);
     }, []);
 
@@ -202,6 +212,8 @@ export function AdvertisementPage() {
                         onPageSizeChange={_handlePageSizeChange}
                         search={search}
                         onSearchChange={_handleSearchChange}
+                        selectedStatus={status}
+                        onStatusChange={_handleStatusChange}
                         sortField={sortField}
                         sortOrder={sortOrder}
                         onSortChange={_handleSortChange}

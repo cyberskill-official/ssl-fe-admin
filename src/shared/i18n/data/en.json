@@ -14,6 +14,11 @@
             "toast": {
                 "success": "Logout successful"
             }
+        },
+        "sessionConflict": {
+            "title": "Session Conflict Detected",
+            "description": "You have logged into another account in a different browser tab/window. To prevent incorrect creator registration (Created by), operations have been suspended. Please reload this page.",
+            "reloadButton": "Reload page"
         }
     },
     "advertisement": {

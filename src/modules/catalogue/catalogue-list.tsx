@@ -1,3 +1,4 @@
+/* eslint-disable react-dom/no-unsafe-iframe-sandbox */
 import type { ColumnDef } from '@tanstack/react-table';
 
 import {
@@ -26,8 +27,52 @@ import { useGetTags } from '../tag/tag.hook';
 import { CatalogueCard } from './catalogue-card';
 
 const UNDERSCORE_RE = /_/g;
-const IMAGE_FILE_RE = /\.(?:jpg|jpeg|png|gif|webp)$/i;
-const VIDEO_FILE_RE = /\.(?:mp4|webm|ogg)$/i;
+
+function isEmbedUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const u = url.toLowerCase();
+    return (
+        u.includes('iframe.mediadelivery.net')
+        || u.includes('mediadelivery.net')
+        || u.includes('youtube.com')
+        || u.includes('youtu.be')
+        || u.includes('vimeo.com')
+        || u.includes('/embed/')
+    );
+}
+
+function getMediaExtension(urlStr: string) {
+    try {
+        const url = new URL(urlStr);
+        const pathname = url.pathname;
+        const lastDot = pathname.lastIndexOf('.');
+        if (lastDot === -1)
+            return '';
+        return pathname.slice(lastDot + 1).toLowerCase();
+    }
+    catch {
+        const cleanUrl = urlStr.split('?')[0].split('#')[0];
+        const lastDot = cleanUrl.lastIndexOf('.');
+        if (lastDot === -1)
+            return '';
+        return cleanUrl.slice(lastDot + 1).toLowerCase();
+    }
+}
+
+function isImageUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const ext = getMediaExtension(url);
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(ext);
+}
+
+function isVideoUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const ext = getMediaExtension(url);
+    return ['mp4', 'avi', 'mov', 'wmv', 'webm', 'ogg', 'mkv', '3gp'].includes(ext);
+}
 
 const catalogueTypeIcons = {
     BOOTYCALL: <Image className="h-4 w-4" />,
@@ -145,11 +190,19 @@ export function CatalogueList({
                             />
                         )}
                         {catalogue.type === E_CatalogueType.PARTY && (
-                            <video
-                                src={url}
-                                className="w-16 h-12 object-cover rounded border"
-                                controls
-                            />
+                            isEmbedUrl(url)
+                                ? (
+                                        <div className="w-16 h-12 bg-purple-100 dark:bg-purple-800 rounded border flex items-center justify-center">
+                                            <Video className="h-6 w-6 text-purple-500" />
+                                        </div>
+                                    )
+                                : (
+                                        <video
+                                            src={url}
+                                            className="w-16 h-12 object-cover rounded border"
+                                            controls
+                                        />
+                                    )
                         )}
                         {catalogue.type === E_CatalogueType.TRAVEL && (
                             <div className="w-16 h-12 bg-blue-100 dark:bg-blue-800 rounded border flex items-center justify-center">
@@ -308,6 +361,8 @@ export function CatalogueList({
                                 <DataTable
                                     columns={columns}
                                     data={filteredCatalogues}
+                                    showPagination={false}
+                                    showToolbar={false}
                                 />
                             )}
                 {/* Pagination */}
@@ -373,22 +428,34 @@ export function CatalogueList({
                             {selectedMedia?.tag?.name ?? t('untagged')}
                         </DialogTitle>
                     </DialogHeader>
-                    <div className="flex flex-col gap-4 justify-center items-center">
-                        {/* Show image if url ends with image extension */}
-                        {selectedMedia?.url && IMAGE_FILE_RE.test(selectedMedia.url) && (
+                    <div className="flex flex-col gap-4 justify-center items-center w-full">
+                        {/* Show image if url is image */}
+                        {selectedMedia?.url && isImageUrl(selectedMedia.url) && (
                             <img
                                 src={selectedMedia.url}
                                 alt={selectedMedia.tag?.name || 'Catalogue image'}
                                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
                             />
                         )}
-                        {/* Show video if url ends with video extension */}
-                        {selectedMedia?.url && VIDEO_FILE_RE.test(selectedMedia.url) && (
+                        {/* Show video if url is video */}
+                        {selectedMedia?.url && isVideoUrl(selectedMedia.url) && (
                             <video
                                 src={selectedMedia.url}
                                 controls
                                 autoPlay
                                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                            />
+                        )}
+                        {/* Show iframe if url is embed stream */}
+                        {selectedMedia?.url && isEmbedUrl(selectedMedia.url) && (
+                            <iframe
+                                src={selectedMedia.url}
+                                title={selectedMedia.tag?.name || 'Catalogue video'}
+                                frameBorder="0"
+                                allowFullScreen
+                                sandbox="allow-forms allow-scripts allow-pointer-lock allow-same-origin allow-top-navigation"
+                                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                                className="w-full aspect-video max-h-[70vh] rounded-lg"
                             />
                         )}
                         {/* Fallback if no media */}

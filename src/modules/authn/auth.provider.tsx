@@ -4,7 +4,8 @@ import type { I_Children } from '@cyberskill/shared/typescript';
 import { useMutation, useQuery } from '@cyberskill/shared/react/apollo-client';
 import { Loading } from '@cyberskill/shared/react/loading';
 import { toast } from '@cyberskill/shared/react/toast';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
     checkAuthQuery,
@@ -17,6 +18,7 @@ import type {
     logoutMutationVariables,
 } from '#shared/graphql';
 
+import { Button } from '#shared/component';
 import {
     checkAuthDocument,
     createGuardianVisitTokenDocument,
@@ -36,6 +38,8 @@ export function AuthProvider({ children }: I_Children) {
     const { t } = useTranslate('auth');
     const [auth, setAuth] = useState<I_Auth | undefined>(undefined);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [sessionConflict, setSessionConflict] = useState(false);
+    const loadedTokenRef = useRef<string | undefined>(undefined);
 
     // Always run checkAuth on mount — auth is cookie-based (credentials: 'include'),
     // so the query works even without a token in localStorage.
@@ -60,6 +64,7 @@ export function AuthProvider({ children }: I_Children) {
                 ...(result?.token && { token: result?.token }),
             });
             if (result?.token) {
+                loadedTokenRef.current = result.token;
                 token.set(result.token);
             }
             setIsInitialLoad(false);
@@ -69,6 +74,7 @@ export function AuthProvider({ children }: I_Children) {
 
     useEffect(() => {
         if (errorCheckAuth) {
+            loadedTokenRef.current = undefined;
             token.remove();
             setAuth({
                 isLoggedIn: false,
@@ -77,6 +83,14 @@ export function AuthProvider({ children }: I_Children) {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [errorCheckAuth]);
+
+    useEffect(() => {
+        if (auth?.isLoggedIn && loadedTokenRef.current) {
+            if (token.value !== loadedTokenRef.current) {
+                setSessionConflict(true);
+            }
+        }
+    }, [token.value, auth]);
 
     const [login, { loading: loadingLogin }] = useMutation<loginMutation, loginMutationVariables>(loginDocument, {
         onCompleted: async (response) => {
@@ -123,7 +137,9 @@ export function AuthProvider({ children }: I_Children) {
 
         login({ variables: loginVariables }).then((response) => {
             if (response.data?.login.success && response.data.login.result?.token) {
-                token.set(response.data.login.result.token, !!loginVariables.rememberMe);
+                const newTokenVal = response.data.login.result.token;
+                loadedTokenRef.current = newTokenVal;
+                token.set(newTokenVal, !!loginVariables.rememberMe);
             }
             if (callback) {
                 callback();
@@ -132,6 +148,7 @@ export function AuthProvider({ children }: I_Children) {
     }, [login, token]);
 
     const _handleLogout = useCallback((callback?: () => void) => {
+        loadedTokenRef.current = undefined;
         logout().then(() => {
             token.remove();
 
@@ -184,6 +201,65 @@ export function AuthProvider({ children }: I_Children) {
     return (
         <AuthContext value={contextValue}>
             {children}
+            {sessionConflict && (
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-fade-in-custom">
+                    <style>
+                        {`
+                        @keyframes fadeIn {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        @keyframes scaleUp {
+                            from { transform: scale(0.95); opacity: 0; }
+                            to { transform: scale(1); opacity: 1; }
+                        }
+                        @keyframes spinSlow {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                        .animate-fade-in-custom {
+                            animation: fadeIn 0.3s ease-out forwards;
+                        }
+                        .animate-scale-up-custom {
+                            animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                        }
+                        .animate-spin-slow-custom {
+                            animation: spinSlow 3s linear infinite;
+                        }
+                    `}
+                    </style>
+                    <div className="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full shadow-2xl border border-white/20 dark:border-slate-800/40 text-center space-y-6 overflow-hidden animate-scale-up-custom">
+                        {/* Ambient background glows */}
+                        <div className="absolute -top-10 -left-10 w-40 h-40 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                        <div className="relative">
+                            <div className="w-20 h-20 bg-rose-100 dark:bg-rose-950/40 rounded-2xl flex items-center justify-center mx-auto text-rose-500 dark:text-rose-400 shadow-inner border border-rose-200/50 dark:border-rose-900/30 animate-pulse">
+                                <AlertTriangle className="w-10 h-10 stroke-[2]" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 relative z-10">
+                            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white bg-gradient-to-r from-rose-500 to-amber-500 bg-clip-text text-transparent">
+                                {t('sessionConflict.title')}
+                            </h2>
+                            <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                                {t('sessionConflict.description')}
+                            </p>
+                        </div>
+
+                        <div className="relative z-10">
+                            <Button
+                                onClick={() => window.location.reload()}
+                                className="w-full bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-semibold py-6 rounded-2xl transition-all duration-300 shadow-lg shadow-rose-500/20 hover:shadow-rose-600/30 hover:scale-[1.02] active:scale-[0.98] border-none text-base"
+                            >
+                                <RefreshCw className="w-5 h-5 mr-2 animate-spin-slow-custom" />
+                                {t('sessionConflict.reloadButton')}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AuthContext>
     );
 }
