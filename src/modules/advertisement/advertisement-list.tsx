@@ -126,7 +126,7 @@ export function AdvertisementList({
             accessorKey: 'createdBy',
             header: t('created-by'),
             cell: ({ row }: { row: Row<T_Advertisement> }) => (
-                <div className="text-sm text-gray-600 dark:text-gray-300">{row.original.createdBy?.username || ''}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">{row.original.createdBy?.username || '-'}</div>
             ),
         },
         {
@@ -257,7 +257,7 @@ export function AdvertisementList({
                         />
                     )}
             {/* Pagination */}
-            {totalDocs > pageSize && (
+            {totalDocs > 0 && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/90 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl border border-white/30 dark:border-gray-600/50 shadow-xl">
                     <Pagination
                         total={totalDocs}
@@ -269,6 +269,7 @@ export function AdvertisementList({
                         hasPrevPage={page > 1}
                         totalPages={Math.ceil(totalDocs / pageSize)}
                         className="border-0 bg-transparent"
+                        sticky={false}
                     />
                 </motion.div>
             )}

@@ -33,14 +33,14 @@ function readFromAnyStorage<T>(key: string): StoredValue<T> {
     const localStorage = getStorage('local');
     const sessionStorage = getStorage('session');
 
-    const localValue = readFromStorage<T>(localStorage, key);
-    if (localValue !== undefined) {
-        return { value: localValue, storageType: 'local' };
-    }
-
     const sessionValue = readFromStorage<T>(sessionStorage, key);
     if (sessionValue !== undefined) {
         return { value: sessionValue, storageType: 'session' };
+    }
+
+    const localValue = readFromStorage<T>(localStorage, key);
+    if (localValue !== undefined) {
+        return { value: localValue, storageType: 'local' };
     }
 
     return { value: undefined, storageType: undefined };
@@ -48,7 +48,8 @@ function readFromAnyStorage<T>(key: string): StoredValue<T> {
 
 /**
  * Custom hook for auth token storage.
- * Reads from localStorage first, falls back to sessionStorage.
+ * Reads from sessionStorage first so a tab-level login cannot be overridden by
+ * stale persisted credentials from a different admin account.
  * Use persist=true to store in localStorage.
  */
 export function useAuthStorage<T>(key: string) {

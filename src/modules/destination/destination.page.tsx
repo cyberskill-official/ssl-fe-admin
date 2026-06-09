@@ -16,12 +16,29 @@ import { DestinationForm } from './destination-form';
 import { DestinationList } from './destination-list';
 import { useCreateDestination, useDeleteDestination, useGetDestinations, useUpdateDestination } from './destination.hook';
 
+const DEFAULT_SEARCH_LIMIT = 1000;
+const DIACRITICS_RE = /[\u0300-\u036F]/g;
+const NON_SEARCH_CHAR_RE = /[^\p{L}\p{N}]+/gu;
+const WHITESPACE_RE = /\s+/g;
+
+/** Normalize a string for fuzzy-ish search: lowercase + remove diacritics + collapse whitespace */
+function normalizeSearch(str: string): string {
+    return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(DIACRITICS_RE, '')
+        .replace(NON_SEARCH_CHAR_RE, ' ')
+        .replace(WHITESPACE_RE, ' ')
+        .trim();
+}
+
 export function DestinationPage() {
     const { t } = useTranslate('destination');
     const { setHeader } = usePortal();
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
+    const [searchLimit, setSearchLimit] = useState(DEFAULT_SEARCH_LIMIT);
     const [selectedType, setSelectedType] = useState<'CLUB' | 'RESORT' | 'ALL'>('ALL');
     const [selectedRating, setSelectedRating] = useState<'GOLD' | 'SILVER' | 'BRONZE' | 'ALL'>('ALL');
     const [selectedStatus, setSelectedStatus] = useState<'ACTIVE' | 'INACTIVE' | 'ALL'>('ALL');
@@ -42,17 +59,14 @@ export function DestinationPage() {
         return () => setHeader(null);
     }, [setHeader, t]);
 
+    const isSearching = search.trim().length > 0;
+
     const filter = useMemo(() => {
         const filterObj: {
-            name?: string;
             type?: E_DestinationType;
             rating?: E_DestinationRating;
             isActive?: boolean;
         } = {};
-
-        if (search) {
-            filterObj.name = search;
-        }
 
         if (selectedType !== 'ALL') {
             filterObj.type = selectedType as E_DestinationType;
@@ -67,16 +81,54 @@ export function DestinationPage() {
         }
 
         return filterObj;
-    }, [search, selectedType, selectedRating, selectedStatus]);
+    }, [selectedType, selectedRating, selectedStatus]);
 
     const options = useMemo(() => ({
-        page,
-        limit: pageSize,
+        page: isSearching ? 1 : page,
+        limit: isSearching ? searchLimit : pageSize,
         sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
         populate: ['createdBy', 'location', 'nearbyHotels.location'],
-    }), [page, pageSize, sortField, sortOrder]);
+    }), [page, pageSize, searchLimit, sortField, sortOrder, isSearching]);
 
-    const { destinations, loading, refetch, totalDocs } = useGetDestinations(filter, options);
+    const { destinations: rawDestinations, loading, refetch, totalDocs: rawTotalDocs } = useGetDestinations(filter, options);
+
+    useEffect(() => {
+        if (isSearching && rawTotalDocs > searchLimit) {
+            // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+            setSearchLimit(rawTotalDocs);
+        }
+    }, [isSearching, rawTotalDocs, searchLimit]);
+
+    const filteredDestinations = useMemo(() => {
+        if (!isSearching)
+            return rawDestinations;
+        const searchTerms = normalizeSearch(search).split(' ').filter(Boolean);
+        if (searchTerms.length === 0)
+            return rawDestinations;
+
+        return rawDestinations.filter((d: T_Destination) => {
+            const name = normalizeSearch(d?.name || '');
+            const address = normalizeSearch(d?.location?.address || '');
+            const cityName = normalizeSearch(d?.location?.city?.name || '');
+            const countryName = normalizeSearch(d?.location?.country?.name || '');
+
+            return searchTerms.every(term =>
+                name.includes(term)
+                || address.includes(term)
+                || cityName.includes(term)
+                || countryName.includes(term),
+            );
+        });
+    }, [rawDestinations, search, isSearching]);
+
+    const destinations = useMemo(() => {
+        if (!isSearching)
+            return filteredDestinations;
+        const start = (page - 1) * pageSize;
+        return filteredDestinations.slice(start, start + pageSize);
+    }, [filteredDestinations, page, pageSize, isSearching]);
+
+    const totalDocs = isSearching ? filteredDestinations.length : rawTotalDocs;
     const { createDestination, loading: creatingDestination } = useCreateDestination();
     const { updateDestination, loading: updatingDestination } = useUpdateDestination();
     const { deleteDestination } = useDeleteDestination();
@@ -140,6 +192,7 @@ export function DestinationPage() {
 
     const _handleSearchChange = useCallback((value: string) => {
         setSearch(value);
+        setSearchLimit(DEFAULT_SEARCH_LIMIT);
         setPage(1);
     }, []);
 

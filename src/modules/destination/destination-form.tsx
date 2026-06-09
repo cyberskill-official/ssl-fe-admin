@@ -1,3 +1,5 @@
+import type { FieldPath } from 'react-hook-form';
+
 import { useLazyQuery } from '@cyberskill/shared/react/apollo-client';
 import {
     Building,
@@ -26,9 +28,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Controller, useForm } from 'react-hook-form';
-import type { FieldPath } from 'react-hook-form';
 
-import type { Input_CreateDestination, Input_UpdateDestination, T_Destination, T_City } from '#shared/graphql';
+import type { Input_CreateDestination, Input_UpdateDestination, T_City, T_Destination } from '#shared/graphql';
 
 import { useGetCountries } from '#modules/location';
 import { useGetCities } from '#modules/location/city/city.hook';
@@ -655,7 +656,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                         if (cityFeature) {
                             const cityName = cityFeature.text;
                             const hotelCities = hotelCitiesCache[foundCountry.id] || [];
-                            const foundCity = hotelCities.find((c) =>
+                            const foundCity = hotelCities.find(c =>
                                 c.name?.toLowerCase() === cityName.toLowerCase(),
                             );
 
@@ -748,12 +749,12 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                         cityId: location?.cityId || '',
                         address: location?.address || '',
                     },
-            nearbyHotels: nearbyHotels.map(hotel => ({
-                name: hotel.name,
-                location: hotel.location?.map?.latitude && hotel.location?.map?.longitude
+            nearbyHotels: (nearbyHotels || []).map(hotel => ({
+                name: hotel?.name || '',
+                location: hotel?.location?.map?.latitude && hotel?.location?.map?.longitude
                     ? {
-                            address: hotel.location.address,
-                            countryId: hotel.location.countryId,
+                            address: hotel.location.address || '',
+                            countryId: hotel.location.countryId || '',
                             cityId: hotel.location.cityId || '',
                             map: {
                                 latitude: hotel.location.map.latitude,
@@ -761,16 +762,16 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                             },
                         }
                     : {
-                            address: hotel.location.address,
-                            countryId: hotel.location.countryId,
-                            cityId: hotel.location.cityId || '',
+                            address: hotel?.location?.address || '',
+                            countryId: hotel?.location?.countryId || '',
+                            cityId: hotel?.location?.cityId || '',
                         },
-                url: hotel.url,
-                description: hotel.description,
-                image: hotel.image,
+                url: hotel?.url || '',
+                description: hotel?.description || '',
+                image: hotel?.image || '',
             })),
             logo: data.logo || '',
-            images: data.images,
+            images: data.images || [],
             seo: {
                 ...data.seo,
                 socialImage: socialShareImage || '',
@@ -1861,8 +1862,8 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                         return (
                                                                             <AutocompleteSelect
                                                                                 options={hotelCities
-                                                                                    ?.filter((city) => city !== null && city !== undefined)
-                                                                                    ?.map((city) => ({
+                                                                                    ?.filter(city => city !== null && city !== undefined)
+                                                                                    ?.map(city => ({
                                                                                         id: city.id!,
                                                                                         name: city.name!,
                                                                                     })) || []}

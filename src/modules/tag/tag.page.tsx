@@ -14,6 +14,20 @@ import { TagForm } from './tag-form';
 import { TagList } from './tag-list';
 import { useCreateTag, useDeleteTag, useGetTags, useUpdateTag } from './tag.hook';
 
+const DIACRITICS_RE = /[\u0300-\u036F]/g;
+const NON_SEARCH_CHAR_RE = /[^\p{L}\p{N}]+/gu;
+const WHITESPACE_RE = /\s+/g;
+
+function normalizeTagText(value?: string | null) {
+    return (value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(DIACRITICS_RE, '')
+        .replace(NON_SEARCH_CHAR_RE, ' ')
+        .replace(WHITESPACE_RE, ' ')
+        .trim();
+}
+
 export function TagPage() {
     const { t } = useTranslate('tag');
     const { setHeader } = usePortal();
@@ -35,7 +49,7 @@ export function TagPage() {
         return () => setHeader(null);
     }, [setHeader, t]);
 
-    const shouldFetchAll = !!search;
+    const shouldFetchAll = true;
 
     const [knownTotal, setKnownTotal] = useState(1000);
 
@@ -91,8 +105,9 @@ export function TagPage() {
         if (!search) {
             return rawTags;
         }
+        const searchText = normalizeTagText(search);
         return rawTags.filter(tag =>
-            tag.name?.toLowerCase().includes(search.toLowerCase()),
+            normalizeTagText(tag.name).includes(searchText),
         );
     }, [rawTags, search]);
 
@@ -100,15 +115,41 @@ export function TagPage() {
         if (!filteredTags.length) {
             return filteredTags;
         }
+        const sorted = [...filteredTags];
         if (sortField === 'usageCount') {
-            return [...filteredTags].sort((a, b) => {
+            return sorted.sort((a, b) => {
                 const aCount = Number(a.usageCount) || 0;
                 const bCount = Number(b.usageCount) || 0;
                 return sortOrder === 'desc' ? bCount - aCount : aCount - bCount;
             });
         }
-
-        return filteredTags;
+        if (sortField === 'name') {
+            return sorted.sort((a, b) => {
+                const aName = normalizeTagText(a.name);
+                const bName = normalizeTagText(b.name);
+                const result = sortOrder === 'desc'
+                    ? bName.localeCompare(aName, 'en', { sensitivity: 'base' })
+                    : aName.localeCompare(bName, 'en', { sensitivity: 'base' });
+                return result || String(a.id || '').localeCompare(String(b.id || ''));
+            });
+        }
+        if (sortField === 'createdAt') {
+            return sorted.sort((a, b) => {
+                const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+            });
+        }
+        if (sortField === 'type') {
+            return sorted.sort((a, b) => {
+                const aType = (a.type || '').toLowerCase();
+                const bType = (b.type || '').toLowerCase();
+                return sortOrder === 'desc'
+                    ? bType.localeCompare(aType)
+                    : aType.localeCompare(bType);
+            });
+        }
+        return sorted;
     }, [filteredTags, sortField, sortOrder]);
 
     const paginatedData = useMemo(() => {

@@ -22,21 +22,25 @@ function isEmbedUrl(url?: string | null) {
     );
 }
 
-function getMediaExtension(urlStr: string) {
+function getMediaExtension(urlStr?: string | null) {
+    if (!urlStr)
+        return '';
     try {
         const url = new URL(urlStr);
         const pathname = url.pathname;
-        const lastDot = pathname.lastIndexOf('.');
+        const filename = pathname.split('/').pop() || '';
+        const lastDot = filename.lastIndexOf('.');
         if (lastDot === -1)
             return '';
-        return pathname.slice(lastDot + 1).toLowerCase();
+        return filename.slice(lastDot + 1).toLowerCase();
     }
     catch {
-        const cleanUrl = urlStr.split('?')[0].split('#')[0];
-        const lastDot = cleanUrl.lastIndexOf('.');
+        const cleanUrl = (urlStr.split('?')[0] ?? '').split('#')[0] ?? '';
+        const filename = cleanUrl.split('/').pop() ?? '';
+        const lastDot = filename.lastIndexOf('.');
         if (lastDot === -1)
             return '';
-        return cleanUrl.slice(lastDot + 1).toLowerCase();
+        return filename.slice(lastDot + 1).toLowerCase();
     }
 }
 
@@ -58,7 +62,7 @@ interface I_CatalogueCardProps {
     catalogue: T_Catalogue;
     onEdit?: (catalogue: T_Catalogue) => void;
     onDelete?: (catalogue: T_Catalogue) => void;
-    t: (key: string, params?: Record<string, any>) => string;
+    t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 const catalogueTypeIcons = {
@@ -93,14 +97,14 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
                     y: -4,
                     transition: { duration: 0.2 },
                 }}
-                className={`group relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-xl border border-white/30 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300 ${catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'shadow-gray-500/30'}`}
+                className={`group relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-xl border border-white/30 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300 ${catalogue.type ? (catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'shadow-gray-500/30') : 'shadow-gray-500/30'}`}
             >
                 {/* Card Content */}
                 <div className="p-4">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-3">
-                        <div className={`p-2 rounded-lg bg-gradient-to-br ${catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'from-gray-400 to-gray-600'}`}>
-                            {catalogueTypeIcons[catalogue.type as keyof typeof catalogueTypeIcons] || <Image className="h-4 w-4 text-white" />}
+                        <div className={`p-2 rounded-lg bg-gradient-to-br ${catalogue.type ? (catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'from-gray-400 to-gray-600') : 'from-gray-400 to-gray-600'}`}>
+                            {catalogue.type ? (catalogueTypeIcons[catalogue.type as keyof typeof catalogueTypeIcons] || <Image className="h-4 w-4 text-white" />) : <Image className="h-4 w-4 text-white" />}
                         </div>
                         <Badge variant="outline" className="text-xs border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 bg-white/50 dark:bg-gray-700/50">
                             {catalogue.tag?.name || t('untagged')}
@@ -180,13 +184,13 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
                             {t('created-at')}
                             :
                             {' '}
-                            {new Date(catalogue.createdAt).toLocaleString()}
+                            {catalogue.createdAt ? new Date(catalogue.createdAt).toLocaleString() : '-'}
                         </div>
                         <div>
                             {t('updated-at')}
                             :
                             {' '}
-                            {new Date(catalogue.updatedAt).toLocaleString()}
+                            {catalogue.updatedAt ? new Date(catalogue.updatedAt).toLocaleString() : '-'}
                         </div>
                     </div>
 
@@ -208,7 +212,7 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
                 </div>
 
                 {/* Bottom Gradient Border */}
-                <div className={`h-1 bg-gradient-to-r ${catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'from-gray-400 to-gray-600'} rounded-b-xl`} />
+                <div className={`h-1 bg-gradient-to-r ${catalogue.type ? (catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'from-gray-400 to-gray-600') : 'from-gray-400 to-gray-600'} rounded-b-xl`} />
             </motion.div>
 
             {/* Media Preview Modal */}

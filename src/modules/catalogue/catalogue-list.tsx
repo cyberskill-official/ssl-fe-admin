@@ -27,6 +27,17 @@ import { useGetTags } from '../tag/tag.hook';
 import { CatalogueCard } from './catalogue-card';
 
 const UNDERSCORE_RE = /_/g;
+const WORD_BOUNDARY_RE = /\b\w/g;
+
+function getTagTypeFallback(type?: string | null) {
+    return type
+        ? type.toLowerCase().replace(UNDERSCORE_RE, ' ').replace(WORD_BOUNDARY_RE, char => char.toUpperCase())
+        : '';
+}
+
+function getSafeTranslation(value: unknown, fallback: string) {
+    return typeof value === 'string' && value !== '[object Object]' ? value : fallback;
+}
 
 function isEmbedUrl(url?: string | null) {
     if (!url)
@@ -42,21 +53,25 @@ function isEmbedUrl(url?: string | null) {
     );
 }
 
-function getMediaExtension(urlStr: string) {
+function getMediaExtension(urlStr?: string | null) {
+    if (!urlStr)
+        return '';
     try {
         const url = new URL(urlStr);
         const pathname = url.pathname;
-        const lastDot = pathname.lastIndexOf('.');
+        const filename = pathname.split('/').pop() || '';
+        const lastDot = filename.lastIndexOf('.');
         if (lastDot === -1)
             return '';
-        return pathname.slice(lastDot + 1).toLowerCase();
+        return filename.slice(lastDot + 1).toLowerCase();
     }
     catch {
-        const cleanUrl = urlStr.split('?')[0].split('#')[0];
-        const lastDot = cleanUrl.lastIndexOf('.');
+        const cleanUrl = (urlStr.split('?')[0] ?? '').split('#')[0] ?? '';
+        const filename = cleanUrl.split('/').pop() ?? '';
+        const lastDot = filename.lastIndexOf('.');
         if (lastDot === -1)
             return '';
-        return cleanUrl.slice(lastDot + 1).toLowerCase();
+        return filename.slice(lastDot + 1).toLowerCase();
     }
 }
 
@@ -103,6 +118,7 @@ export function CatalogueList({
     onTypeChange,
 }: I_CatalogueListProps) {
     const { t } = useTranslate('catalogue');
+    const { t: tTag } = useTranslate('tag');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [selectedMedia, setSelectedMedia] = useState<T_Catalogue | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,7 +136,7 @@ export function CatalogueList({
         { value: 'ALL', label: t('all-tags') },
         ...tags.map(tag => ({
             value: tag.id || '',
-            label: tag.name,
+            label: tag.name ?? '',
         })),
     ];
 
@@ -134,11 +150,11 @@ export function CatalogueList({
             accessorKey: 'type',
             header: t('type'),
             cell: ({ row }) => {
-                const type = row.getValue('type') as E_CatalogueType;
+                const type = row.getValue('type') as E_CatalogueType | null;
                 return (
                     <div className="flex items-center gap-2">
-                        <div className={`p-1 rounded bg-gradient-to-br ${catalogueTypeGradients[type] || 'from-gray-400 to-gray-600'}`}>
-                            {catalogueTypeIcons[type] || <Image className="h-3 w-3 text-white" />}
+                        <div className={`p-1 rounded bg-gradient-to-br ${type ? (catalogueTypeGradients[type] || 'from-gray-400 to-gray-600') : 'from-gray-400 to-gray-600'}`}>
+                            {type ? (catalogueTypeIcons[type] || <Image className="h-3 w-3 text-white" />) : <Image className="h-3 w-3 text-white" />}
                         </div>
                         <span className="text-sm font-medium">{t(type?.toLowerCase() || 'unknown')}</span>
                     </div>
@@ -150,12 +166,15 @@ export function CatalogueList({
             header: t('tag'),
             cell: ({ row }) => {
                 const tag = row.original.tag;
+                const typeKey = tag?.type?.toLowerCase().replace(UNDERSCORE_RE, '-');
+                const translatedType = typeKey ? tTag(typeKey) : undefined;
+                const typeLabel = getSafeTranslation(translatedType, getTagTypeFallback(tag?.type));
                 return (
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{tag?.name ?? 'Untagged'}</span>
-                        {tag?.type && (
+                        {typeLabel && (
                             <Badge variant="outline" className="text-xs">
-                                {t(tag.type.toLowerCase().replace(UNDERSCORE_RE, '-'))}
+                                {typeLabel}
                             </Badge>
                         )}
                     </div>
@@ -217,16 +236,16 @@ export function CatalogueList({
             accessorKey: 'createdAt',
             header: t('created-at'),
             cell: ({ row }) => {
-                const date = new Date(row.getValue('createdAt'));
-                return <span className="text-sm text-gray-600 dark:text-gray-400">{date.toLocaleString()}</span>;
+                const val = row.getValue('createdAt');
+                return <span className="text-sm text-gray-600 dark:text-gray-400">{val ? new Date(val as string).toLocaleString() : '-'}</span>;
             },
         },
         {
             accessorKey: 'updatedAt',
             header: t('updated-at'),
             cell: ({ row }) => {
-                const date = new Date(row.getValue('updatedAt'));
-                return <span className="text-sm text-gray-600 dark:text-gray-400">{date.toLocaleString()}</span>;
+                const val = row.getValue('updatedAt');
+                return <span className="text-sm text-gray-600 dark:text-gray-400">{val ? new Date(val as string).toLocaleString() : '-'}</span>;
             },
         },
         {
@@ -342,7 +361,7 @@ export function CatalogueList({
                                                         catalogue={catalogue}
                                                         onEdit={onEditCatalogue}
                                                         onDelete={onDeleteCatalogue}
-                                                        t={t}
+                                                        t={t as (key: string, params?: Record<string, unknown>) => string}
                                                     />
                                                 </motion.div>
                                             ))}
