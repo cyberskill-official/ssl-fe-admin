@@ -56,6 +56,10 @@ interface I_MapTilerFeature {
     text?: string;
 }
 
+function getFormText(value: unknown) {
+    return getDestinationText(value).trim();
+}
+
 const FORM_DEFAULT_VALUES: I_DestinationFormData = {
     type: E_DestinationType.CLUB,
     name: '',
@@ -735,11 +739,19 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
         const { location, nearbyHotels, ...rest } = data;
         const submitData = {
             ...rest,
+            name: getFormText(data.name),
+            websiteURL: getFormText(data.websiteURL),
+            introductionHeadline: getFormText(data.introductionHeadline),
+            introductionContent: getFormText(data.introductionContent),
+            wearImage: getFormText(data.wearImage),
+            womenDressCode: getFormText(data.womenDressCode),
+            menDressCode: getFormText(data.menDressCode),
+            logo: getFormText(data.logo),
             location: location?.map?.latitude && location?.map?.longitude
                 ? {
                         countryId: location?.countryId || '',
                         cityId: location?.cityId || '',
-                        address: location?.address || '',
+                        address: getFormText(location?.address),
                         map: {
                             latitude: location.map.latitude,
                             longitude: location.map.longitude,
@@ -748,13 +760,13 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 : {
                         countryId: location?.countryId || '',
                         cityId: location?.cityId || '',
-                        address: location?.address || '',
+                        address: getFormText(location?.address),
                     },
             nearbyHotels: (nearbyHotels || []).map(hotel => ({
-                name: hotel?.name || '',
+                name: getFormText(hotel?.name),
                 location: hotel?.location?.map?.latitude && hotel?.location?.map?.longitude
                     ? {
-                            address: hotel.location.address || '',
+                            address: getFormText(hotel.location.address),
                             countryId: hotel.location.countryId || '',
                             cityId: hotel.location.cityId || '',
                             map: {
@@ -763,19 +775,18 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                             },
                         }
                     : {
-                            address: hotel?.location?.address || '',
+                            address: getFormText(hotel?.location?.address),
                             countryId: hotel?.location?.countryId || '',
                             cityId: hotel?.location?.cityId || '',
                         },
-                url: hotel?.url || '',
-                description: hotel?.description || '',
-                image: hotel?.image || '',
+                url: getFormText(hotel?.url),
+                description: getFormText(hotel?.description),
+                image: getFormText(hotel?.image),
             })),
-            logo: data.logo || '',
-            images: data.images || [],
+            images: (data.images || []).map(image => getFormText(image)).filter(Boolean),
             seo: {
                 ...data.seo,
-                socialImage: socialShareImage || '',
+                socialImage: getFormText(socialShareImage),
             },
         };
 

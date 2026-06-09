@@ -122,7 +122,7 @@ export function useCreateDestination() {
                     toast.success(t('success-save'));
                 }
                 else {
-                    toast.error(message ?? t('error-save'));
+                    toast.error(typeof message === 'string' ? message : t('error-save'));
                 }
             },
             onError: (error) => {
@@ -133,7 +133,7 @@ export function useCreateDestination() {
     );
 
     const handleCreate = useCallback((data: Input_CreateDestination) => {
-        createDestination({ variables: { doc: data } });
+        return createDestination({ variables: { doc: data } });
     }, [createDestination]);
 
     return { createDestination: handleCreate, loading };
@@ -150,7 +150,7 @@ export function useUpdateDestination() {
                     toast.success(t('success-save'));
                 }
                 else {
-                    toast.error(message || t('error-save'));
+                    toast.error(typeof message === 'string' ? message : t('error-save'));
                 }
             },
             onError: (error) => {
@@ -160,7 +160,7 @@ export function useUpdateDestination() {
     );
 
     const handleUpdate = useCallback((id: string, data: Input_UpdateDestination) => {
-        updateDestination({ variables: { filter: { id }, update: data } });
+        return updateDestination({ variables: { filter: { id }, update: data } });
     }, [updateDestination]);
 
     return { updateDestination: handleUpdate, loading };
