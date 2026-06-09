@@ -47,6 +47,7 @@ import { cn } from '#shared/util';
 
 import type { I_DestinationFormData, I_DestinationFormProps, I_DestinationFormRef, T_Hotel } from './destination.type';
 
+import { getDestinationText } from './destination-text';
 import { useGetDestination } from './destination.hook';
 
 interface I_MapTilerFeature {
@@ -242,7 +243,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
             reset({
                 ...FORM_DEFAULT_VALUES,
                 type,
-                name: destinationToUse.name ?? '',
+                name: getDestinationText(destinationToUse.name),
                 websiteURL: destinationToUse.websiteURL ?? '',
                 rating: destinationToUse.rating ?? undefined,
                 location: {
@@ -261,7 +262,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 ageGroup: destinationToUse.ageGroup ?? undefined,
                 logo: destinationToUse.logo ?? '',
                 nearbyHotels: (destinationToUse.nearbyHotels ?? []).map(hotel => ({
-                    name: hotel?.name ?? '',
+                    name: getDestinationText(hotel?.name),
                     location: {
                         address: hotel?.location?.address ?? '',
                         countryId: hotel?.location?.countryId ?? hotel?.locationId ?? '',
@@ -1148,12 +1149,12 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 {watch('location.countryId') && (
                                                     <Badge variant="outline" className="text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-600">
-                                                        {countries?.find(c => c.id === watch('location.countryId'))?.name || 'Unknown Country'}
+                                                        {getDestinationText(countries?.find(c => c.id === watch('location.countryId'))?.name, 'Unknown Country')}
                                                     </Badge>
                                                 )}
                                                 {watch('location.cityId') && (
                                                     <Badge variant="outline" className="text-green-600 border-green-300 dark:text-green-400 dark:border-green-600">
-                                                        {cities?.find(c => c.id === watch('location.cityId'))?.name || 'Unknown City'}
+                                                        {getDestinationText(cities?.find(c => c.id === watch('location.cityId'))?.name, 'Unknown City')}
                                                     </Badge>
                                                 )}
                                             </div>

@@ -14,6 +14,7 @@ import type { I_DestinationFormRef } from './destination.type';
 
 import { DestinationForm } from './destination-form';
 import { DestinationList } from './destination-list';
+import { getDestinationText } from './destination-text';
 import { useCreateDestination, useDeleteDestination, useGetDestinations, useUpdateDestination } from './destination.hook';
 
 const DEFAULT_SEARCH_LIMIT = 1000;
@@ -107,10 +108,10 @@ export function DestinationPage() {
             return rawDestinations;
 
         return rawDestinations.filter((d: T_Destination) => {
-            const name = normalizeSearch(d?.name || '');
+            const name = normalizeSearch(getDestinationText(d?.name));
             const address = normalizeSearch(d?.location?.address || '');
-            const cityName = normalizeSearch(d?.location?.city?.name || '');
-            const countryName = normalizeSearch(d?.location?.country?.name || '');
+            const cityName = normalizeSearch(getDestinationText(d?.location?.city?.name));
+            const countryName = normalizeSearch(getDestinationText(d?.location?.country?.name));
 
             return searchTerms.every(term =>
                 name.includes(term)
@@ -276,7 +277,7 @@ export function DestinationPage() {
                     <span>
                         {t('confirm.delete-destination')}
                         &nbsp;
-                        <b>{destinationToDelete?.name}</b>
+                        <b>{getDestinationText(destinationToDelete?.name)}</b>
                         ?
                     </span>
                 )}

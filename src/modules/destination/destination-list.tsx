@@ -37,6 +37,7 @@ import { useTranslate } from '#shared/i18n';
 import type { I_DestinationListProps } from './destination.type';
 
 import { DestinationCard } from './destination-card';
+import { getDestinationText } from './destination-text';
 
 const destinationTypeIcons = {
     CLUB: <Building className="h-4 w-4" />,
@@ -207,7 +208,7 @@ export function DestinationList({
                     </div>
                     <div>
                         <div className="font-semibold text-gray-900 dark:text-gray-100">
-                            {row.getValue('name')}
+                            {getDestinationText(row.original.name, '-')}
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-300">
                             {t(row.original.type?.toLowerCase() || 'unknown')}
@@ -221,8 +222,8 @@ export function DestinationList({
             header: t('location'),
             cell: ({ row }) => {
                 const destination = row.original;
-                const city = destination.location?.city?.name;
-                const country = destination.location?.country?.name;
+                const city = getDestinationText(destination.location?.city?.name);
+                const country = getDestinationText(destination.location?.country?.name);
 
                 return (
                     <div className="flex items-center gap-2">
