@@ -69,7 +69,7 @@ export function useGetBlogLazy() {
             variables: {
                 filter,
                 options: {
-                    populate: ['author', 'language', 'relatedBlogs'],
+                    populate: ['language', 'relatedBlogs'],
                 },
             },
         });
