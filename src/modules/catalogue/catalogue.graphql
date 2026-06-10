@@ -14,7 +14,7 @@ query getCatalogues($filter: Input_QueryCatalogue, $options: JSON) {
         message
         result {
             docs {
-                ...F_Catalogue
+                ...F_CatalogueListItem
             }
             totalDocs
             limit

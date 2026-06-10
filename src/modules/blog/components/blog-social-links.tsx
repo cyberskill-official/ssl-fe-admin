@@ -24,10 +24,10 @@ const SOCIAL_PLATFORMS = [
     { value: E_SocialPlatform.OTHER, label: 'Other' },
 ];
 
-export function BlogSocialLinks({ formData, onSocialLinksChange }: I_BlogSocialLinksProps) {
+export function BlogSocialLinks({ socialLinks: formSocialLinks, onSocialLinksChange }: I_BlogSocialLinksProps) {
     const { t } = useTranslate('blog');
     const [socialLinks, setSocialLinks] = useState<I_BlogSocialLink[]>(
-        formData.socialLinks?.map((link, index) => ({
+        formSocialLinks?.map((link, index) => ({
             id: `social-${index}`,
             type: link?.type as E_SocialPlatform | null,
             url: link?.url || '',

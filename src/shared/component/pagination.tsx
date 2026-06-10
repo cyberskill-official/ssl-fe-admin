@@ -22,6 +22,7 @@ export interface I_PaginationProps {
     className?: string;
     style?: React.CSSProperties;
     sticky?: boolean;
+    pageSizeOptions?: readonly number[];
 }
 
 export function Pagination({
@@ -36,6 +37,7 @@ export function Pagination({
     className,
     style,
     sticky = true,
+    pageSizeOptions = [10, 25, 50, 100, 500, 1000],
 }: I_PaginationProps) {
     const start = total === 0 ? 0 : (page - 1) * limit + 1;
     const end = Math.min(page * limit, total);
@@ -85,12 +87,11 @@ export function Pagination({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                                <SelectItem value="10" className="dark:text-slate-200 dark:hover:bg-slate-700">10</SelectItem>
-                                <SelectItem value="25" className="dark:text-slate-200 dark:hover:bg-slate-700">25</SelectItem>
-                                <SelectItem value="50" className="dark:text-slate-200 dark:hover:bg-slate-700">50</SelectItem>
-                                <SelectItem value="100" className="dark:text-slate-200 dark:hover:bg-slate-700">100</SelectItem>
-                                <SelectItem value="500" className="dark:text-slate-200 dark:hover:bg-slate-700">500</SelectItem>
-                                <SelectItem value="1000" className="dark:text-slate-200 dark:hover:bg-slate-700">1000</SelectItem>
+                                {pageSizeOptions.map(option => (
+                                    <SelectItem key={option} value={String(option)} className="dark:text-slate-200 dark:hover:bg-slate-700">
+                                        {option}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <span className="text-sm text-muted-foreground dark:text-slate-400">per page</span>

@@ -2,16 +2,16 @@ import { Edit, Star, Tag as TagIcon, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import * as React from 'react';
 
-import type { T_Tag } from '#shared/graphql';
+import type { F_TagListItemFragment } from '#shared/graphql';
 
 import { Badge, Button } from '#shared/component';
 
 const UNDERSCORE_RE = /_/g;
 
 interface I_TagCardProps {
-    tag: T_Tag;
-    onEdit?: (tag: T_Tag) => void;
-    onDelete?: (tag: T_Tag) => void;
+    tag: F_TagListItemFragment;
+    onEdit?: (tag: F_TagListItemFragment) => void;
+    onDelete?: (tag: F_TagListItemFragment) => void;
     t: (key: string, params?: Record<string, any>) => string;
 }
 

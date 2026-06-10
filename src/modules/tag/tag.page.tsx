@@ -2,9 +2,11 @@ import { Tag } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { E_TagType, Input_CreateTag, Input_UpdateTag, T_Tag } from '#shared/graphql';
+import type { F_TagListItemFragment, Input_CreateTag, Input_UpdateTag } from '#shared/graphql';
 
 import { ConfirmDialog } from '#shared/component';
+import { E_TagType } from '#shared/graphql';
+import { createBooleanQueryParam, createEnumQueryParam, createIntegerQueryParam, createStringQueryParam, useDebouncedQueryValue, useListQueryState } from '#shared/hooks';
 import { useTranslate } from '#shared/i18n';
 import { usePortal } from '#shared/portal';
 
@@ -14,30 +16,33 @@ import { TagForm } from './tag-form';
 import { TagList } from './tag-list';
 import { useCreateTag, useDeleteTag, useGetTags, useUpdateTag } from './tag.hook';
 
-const DIACRITICS_RE = /[\u0300-\u036F]/g;
-const NON_SEARCH_CHAR_RE = /[^\p{L}\p{N}]+/gu;
-const WHITESPACE_RE = /\s+/g;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const TAG_TYPES = ['ALL', ...Object.values(E_TagType)] as const;
+const TAG_SORTS = ['usageCount-desc', 'usageCount-asc', 'createdAt-desc', 'createdAt-asc', 'name-asc', 'name-desc', 'type-asc', 'type-desc'] as const;
+const VIEW_MODES = ['grid', 'table'] as const;
 
-function normalizeTagText(value?: string | null) {
-    return (value || '')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(DIACRITICS_RE, '')
-        .replace(NON_SEARCH_CHAR_RE, ' ')
-        .replace(WHITESPACE_RE, ' ')
-        .trim();
-}
+const TAG_QUERY_CONFIG = {
+    page: createIntegerQueryParam(1),
+    pageSize: createIntegerQueryParam(10, { allowedValues: PAGE_SIZE_OPTIONS }),
+    q: createStringQueryParam(),
+    type: createEnumQueryParam<'ALL' | E_TagType>('ALL', TAG_TYPES),
+    custom: createBooleanQueryParam(),
+    lowUsage: createBooleanQueryParam(),
+    sort: createEnumQueryParam('usageCount-desc', TAG_SORTS),
+    view: createEnumQueryParam('grid', VIEW_MODES),
+};
 
 export function TagPage() {
     const { t } = useTranslate('tag');
     const { setHeader } = usePortal();
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [search, setSearch] = useState('');
-    const [selectedType, setSelectedType] = useState<E_TagType | 'ALL'>('ALL');
-    const [sortField, setSortField] = useState<'name' | 'type' | 'usageCount' | 'createdAt'>('usageCount');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-    const [deletingTag, setDeletingTag] = useState<T_Tag | null>(null);
+    const { state: queryState, setState: setQueryState } = useListQueryState(TAG_QUERY_CONFIG);
+    const { page, pageSize, type: selectedType, custom: showCustomOnly, lowUsage: showLowUsage, view: viewMode } = queryState;
+    const [sortField, sortOrder] = queryState.sort.split('-') as ['name' | 'type' | 'usageCount' | 'createdAt', 'asc' | 'desc'];
+    const commitSearch = useCallback((q: string) => {
+        setQueryState({ q }, { replace: true, resetPage: true });
+    }, [setQueryState]);
+    const [search, setSearch] = useDebouncedQueryValue(queryState.q, commitSearch);
+    const [deletingTag, setDeletingTag] = useState<F_TagListItemFragment | null>(null);
     const tagFormRef = useRef<I_TagFormRef>(null);
 
     useEffect(() => {
@@ -49,14 +54,11 @@ export function TagPage() {
         return () => setHeader(null);
     }, [setHeader, t]);
 
-    const shouldFetchAll = true;
-
-    const [knownTotal, setKnownTotal] = useState(1000);
-
     const filter = useMemo(() => {
         const filterObj: {
             isDel: boolean;
             type?: E_TagType;
+            isCustom?: boolean;
         } = {
             isDel: false,
         };
@@ -65,119 +67,53 @@ export function TagPage() {
             filterObj.type = selectedType;
         }
 
+        if (showCustomOnly) {
+            filterObj.isCustom = true;
+        }
+
         return filterObj;
-    }, [selectedType]);
+    }, [selectedType, showCustomOnly]);
 
     const options = useMemo(() => {
         const sortValue = sortOrder === 'desc' ? -1 : 1;
-        const sortObj: any = {};
+        const sortObj: Record<string, 1 | -1> = {};
 
         if (sortField === 'usageCount') {
-            sortObj.usageCount = sortValue;
+            sortObj['usageCount'] = sortValue;
         }
         else {
             sortObj[sortField] = sortValue;
         }
 
         return {
-            page: shouldFetchAll ? 1 : page,
-            limit: shouldFetchAll ? knownTotal : pageSize,
+            page,
+            limit: pageSize,
             sort: sortObj,
-            populate: ['createdBy'],
+            search: queryState.q,
+            usageCountLte: showLowUsage ? 5 : undefined,
+            projection: {
+                id: 1,
+                createdAt: 1,
+                name: 1,
+                type: 1,
+                isCustom: 1,
+                usageCount: 1,
+                createdById: 1,
+            },
+            populate: [{ path: 'createdBy', select: 'id username' }],
+            lean: true,
         };
-    }, [shouldFetchAll, page, pageSize, knownTotal, sortField, sortOrder]);
+    }, [page, pageSize, queryState.q, showLowUsage, sortField, sortOrder]);
 
     const {
-        tags: rawTags,
-        totalDocs: serverTotalDocs,
+        tags,
+        totalDocs,
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
         loading,
         refetch,
     } = useGetTags(filter, options);
-
-    useEffect(() => {
-        if (serverTotalDocs > 0) {
-            // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-            setKnownTotal(prev => Math.max(prev, serverTotalDocs));
-        }
-    }, [serverTotalDocs]);
-
-    const filteredTags = useMemo(() => {
-        if (!search) {
-            return rawTags;
-        }
-        const searchText = normalizeTagText(search);
-        return rawTags.filter(tag =>
-            normalizeTagText(tag.name).includes(searchText),
-        );
-    }, [rawTags, search]);
-
-    const sortedTags = useMemo(() => {
-        if (!filteredTags.length) {
-            return filteredTags;
-        }
-        const sorted = [...filteredTags];
-        if (sortField === 'usageCount') {
-            return sorted.sort((a, b) => {
-                const aCount = Number(a.usageCount) || 0;
-                const bCount = Number(b.usageCount) || 0;
-                return sortOrder === 'desc' ? bCount - aCount : aCount - bCount;
-            });
-        }
-        if (sortField === 'name') {
-            return sorted.sort((a, b) => {
-                const aName = normalizeTagText(a.name);
-                const bName = normalizeTagText(b.name);
-                const result = sortOrder === 'desc'
-                    ? bName.localeCompare(aName, 'en', { sensitivity: 'base' })
-                    : aName.localeCompare(bName, 'en', { sensitivity: 'base' });
-                return result || String(a.id || '').localeCompare(String(b.id || ''));
-            });
-        }
-        if (sortField === 'createdAt') {
-            return sorted.sort((a, b) => {
-                const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
-            });
-        }
-        if (sortField === 'type') {
-            return sorted.sort((a, b) => {
-                const aType = (a.type || '').toLowerCase();
-                const bType = (b.type || '').toLowerCase();
-                return sortOrder === 'desc'
-                    ? bType.localeCompare(aType)
-                    : aType.localeCompare(bType);
-            });
-        }
-        return sorted;
-    }, [filteredTags, sortField, sortOrder]);
-
-    const paginatedData = useMemo(() => {
-        if (shouldFetchAll) {
-            const totalFiltered = sortedTags.length;
-            const totalPagesCalculated = Math.ceil(totalFiltered / pageSize);
-            const startIndex = (page - 1) * pageSize;
-            const endIndex = startIndex + pageSize;
-            const paginatedTags = sortedTags.slice(startIndex, endIndex);
-
-            return {
-                tags: paginatedTags,
-                totalDocs: totalFiltered,
-                totalPages: totalPagesCalculated,
-                hasNextPage: page < totalPagesCalculated,
-                hasPrevPage: page > 1,
-            };
-        }
-        else {
-            return {
-                tags: sortedTags,
-                totalDocs: serverTotalDocs,
-                totalPages: Math.ceil(serverTotalDocs / pageSize),
-                hasNextPage: page * pageSize < serverTotalDocs,
-                hasPrevPage: page > 1,
-            };
-        }
-    }, [shouldFetchAll, sortedTags, page, pageSize, serverTotalDocs]);
 
     const { createTag, loading: creating } = useCreateTag();
     const { updateTag, loading: updating } = useUpdateTag();
@@ -187,11 +123,11 @@ export function TagPage() {
         tagFormRef.current?.open();
     }, []);
 
-    const _handleEditTag = useCallback((tag: T_Tag) => {
+    const _handleEditTag = useCallback((tag: F_TagListItemFragment) => {
         tagFormRef.current?.open(tag);
     }, []);
 
-    const _handleDeleteTag = useCallback((tag: T_Tag) => {
+    const _handleDeleteTag = useCallback((tag: F_TagListItemFragment) => {
         setDeletingTag(tag);
     }, []);
 
@@ -213,30 +149,32 @@ export function TagPage() {
         refetch();
     }, [updateTag, refetch]);
 
+    useEffect(() => {
+        if (!loading && totalPages > 0 && page > totalPages) {
+            // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+            setQueryState({ page: totalPages }, { replace: true });
+        }
+    }, [loading, page, setQueryState, totalPages]);
+
     const _handlePageChange = useCallback((newPage: number) => {
-        setPage(newPage);
-    }, []);
+        setQueryState({ page: newPage });
+    }, [setQueryState]);
 
     const _handlePageSizeChange = useCallback((newPageSize: number) => {
-        setPageSize(newPageSize);
-        setPage(1);
-    }, []);
+        setQueryState({ pageSize: newPageSize }, { resetPage: true });
+    }, [setQueryState]);
 
     const _handleSearchChange = useCallback((value: string) => {
         setSearch(value);
-        setPage(1);
-    }, []);
+    }, [setSearch]);
 
     const _handleTypeChange = useCallback((type: E_TagType | 'ALL') => {
-        setSelectedType(type);
-        setPage(1);
-    }, []);
+        setQueryState({ type }, { resetPage: true });
+    }, [setQueryState]);
 
     const _handleSortChange = useCallback((field: 'name' | 'type' | 'usageCount' | 'createdAt', order: 'asc' | 'desc') => {
-        setSortField(field);
-        setSortOrder(order);
-        setPage(1);
-    }, []);
+        setQueryState({ sort: `${field}-${order}` }, { resetPage: true });
+    }, [setQueryState]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -257,12 +195,12 @@ export function TagPage() {
                     <TagList
                         sortField={sortField}
                         sortOrder={sortOrder}
-                        tags={paginatedData.tags}
+                        tags={tags}
                         loading={loading}
                         onEditTag={_handleEditTag}
                         onCreateTag={_handleCreateTag}
                         onDeleteTag={_handleDeleteTag}
-                        totalDocs={paginatedData.totalDocs}
+                        totalDocs={totalDocs}
                         page={page}
                         pageSize={pageSize}
                         onPageChange={_handlePageChange}
@@ -272,6 +210,15 @@ export function TagPage() {
                         selectedType={selectedType}
                         onTypeChange={_handleTypeChange}
                         onSortChange={_handleSortChange}
+                        showCustomOnly={showCustomOnly}
+                        onShowCustomOnlyChange={value => setQueryState({ custom: value }, { resetPage: true })}
+                        showLowUsage={showLowUsage}
+                        onShowLowUsageChange={value => setQueryState({ lowUsage: value }, { resetPage: true })}
+                        viewMode={viewMode}
+                        onViewModeChange={view => setQueryState({ view })}
+                        totalPages={totalPages}
+                        hasNextPage={hasNextPage}
+                        hasPrevPage={hasPrevPage}
                     />
                 </motion.div>
             </div>

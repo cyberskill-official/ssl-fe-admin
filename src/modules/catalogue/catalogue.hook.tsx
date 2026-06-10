@@ -7,11 +7,11 @@ import type {
     createCatalogueMutationVariables,
     deleteCatalogueMutation,
     deleteCatalogueMutationVariables,
+    F_CatalogueListItemFragment,
     getCatalogueQuery,
     getCatalogueQueryVariables,
     getCataloguesQuery,
     getCataloguesQueryVariables,
-    T_Catalogue,
     updateCatalogueMutation,
     updateCatalogueMutationVariables,
 } from '#shared/graphql';
@@ -51,9 +51,9 @@ export function useGetCatalogues(
         fetchPolicy: 'network-only',
     });
 
-    const catalogues: T_Catalogue[]
+    const catalogues: F_CatalogueListItemFragment[]
         = data?.getCatalogues?.result?.docs?.filter(
-            (c): c is T_Catalogue => c !== null && c !== undefined,
+            (c): c is F_CatalogueListItemFragment => c !== null && c !== undefined,
         ) || [];
 
     const totalDocs = data?.getCatalogues?.result?.totalDocs || 0;

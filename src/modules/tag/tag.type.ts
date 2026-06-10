@@ -1,14 +1,14 @@
 import type { T_Omit_Create } from '@cyberskill/shared/node/mongo';
 
-import type { E_TagType, T_Tag } from '#shared/graphql';
+import type { E_TagType, F_TagListItemFragment, T_Tag } from '#shared/graphql';
 import type { E_FormMode } from '#shared/typescript';
 
 export interface I_TagListProps {
-    tags: T_Tag[];
+    tags: F_TagListItemFragment[];
     loading?: boolean;
-    onEditTag?: (tag: T_Tag) => void;
+    onEditTag?: (tag: F_TagListItemFragment) => void;
     onCreateTag?: () => void;
-    onDeleteTag?: (tag: T_Tag) => void;
+    onDeleteTag?: (tag: F_TagListItemFragment) => void;
     onToggleStatus?: (tagId: string, currentIsActive: boolean) => void;
     updatingStatusId?: string;
     totalDocs?: number;
@@ -23,6 +23,15 @@ export interface I_TagListProps {
     sortField?: 'name' | 'type' | 'usageCount' | 'createdAt';
     sortOrder?: 'asc' | 'desc';
     onSortChange?: (field: 'name' | 'type' | 'usageCount' | 'createdAt', order: 'asc' | 'desc') => void;
+    showCustomOnly?: boolean;
+    onShowCustomOnlyChange?: (value: boolean) => void;
+    showLowUsage?: boolean;
+    onShowLowUsageChange?: (value: boolean) => void;
+    viewMode?: 'grid' | 'table';
+    onViewModeChange?: (view: 'grid' | 'table') => void;
+    totalPages?: number;
+    hasNextPage?: boolean;
+    hasPrevPage?: boolean;
 }
 
 export interface I_TagFormRef {

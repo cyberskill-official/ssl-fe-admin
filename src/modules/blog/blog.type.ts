@@ -7,7 +7,7 @@ export interface I_BlogSocialLink {
 }
 
 export interface I_BlogSocialLinksProps {
-    formData: Input_CreateBlog;
+    socialLinks?: Input_CreateBlog['socialLinks'];
     onSocialLinksChange: (socialLinks: I_BlogSocialLink[]) => void;
 }
 

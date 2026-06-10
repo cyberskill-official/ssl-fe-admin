@@ -4,6 +4,18 @@ fragment F_RelatedBlog on T_Blog {
     category
 }
 
+fragment F_BlogListItem on T_Blog {
+    id
+    createdAt
+    title
+    type
+    category
+    featuredImage
+    hostName
+    readCount
+    isActive
+}
+
 fragment F_Blog on T_Blog {
     id
     slug

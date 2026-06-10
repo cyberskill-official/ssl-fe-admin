@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import * as React from 'react';
 import { useState } from 'react';
 
-import type { T_Catalogue } from '#shared/graphql';
+import type { F_CatalogueListItemFragment } from '#shared/graphql';
 
 import { Badge, Button, Dialog, DialogContent, DialogHeader, DialogTitle } from '#shared/component';
 
@@ -59,9 +59,9 @@ function isVideoUrl(url?: string | null) {
 }
 
 interface I_CatalogueCardProps {
-    catalogue: T_Catalogue;
-    onEdit?: (catalogue: T_Catalogue) => void;
-    onDelete?: (catalogue: T_Catalogue) => void;
+    catalogue: F_CatalogueListItemFragment;
+    onEdit?: (catalogue: F_CatalogueListItemFragment) => void;
+    onDelete?: (catalogue: F_CatalogueListItemFragment) => void;
     t: (key: string, params?: Record<string, unknown>) => string;
 }
 
