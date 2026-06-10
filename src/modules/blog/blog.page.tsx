@@ -59,7 +59,6 @@ export default function BlogPage() {
         page: isSearching ? 1 : page,
         limit: isSearching ? 1000 : pageSize,
         sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
-        populate: ['author'],
     }), [page, pageSize, sortField, sortOrder, isSearching]);
 
     const { blogs: rawBlogs, refetch, totalDocs: rawTotalDocs } = useGetBlogs(filter, options);

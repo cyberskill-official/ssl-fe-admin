@@ -41,7 +41,7 @@ export function useLanguages(
     };
 }
 
-export function useAllLanguages() {
+export function useAllLanguages(options?: { skip?: boolean }) {
     const { data, loading, error, refetch } = useQuery<getLanguagesQuery, getLanguagesQueryVariables>(
         getLanguagesDocument,
         {
@@ -50,6 +50,7 @@ export function useAllLanguages() {
                 options: { limit: 999999 },
             },
             fetchPolicy: 'network-only',
+            skip: options?.skip ?? false,
         },
     );
 

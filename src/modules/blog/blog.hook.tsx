@@ -80,12 +80,11 @@ export function useGetBlogLazy() {
 
 export function useGetBlogs(
     filter?: getBlogsQueryVariables['filter'],
-    options?: getBlogsQueryVariables['options'],
+    options?: getBlogsQueryVariables['options'] & { skip?: boolean },
 ) {
-    // Add populate to include author information
+    const { skip, ...queryOptions } = options || {};
     const mergedOptions = {
-        ...options,
-        populate: ['author', 'language', 'relatedBlogs'],
+        ...queryOptions,
     };
 
     const { data, loading, error, refetch } = useQuery<
@@ -94,6 +93,7 @@ export function useGetBlogs(
     >(getBlogsDocument, {
         variables: { filter, options: mergedOptions },
         fetchPolicy: 'network-only',
+        skip: skip ?? false,
     });
 
     useEffect(() => {

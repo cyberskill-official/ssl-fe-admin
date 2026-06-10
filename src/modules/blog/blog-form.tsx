@@ -307,6 +307,7 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                 populate: ['gallery'],
             },
         ],
+        skip: !isOpen,
     });
     const [featuredImage, setFeaturedImage] = useState<string>('');
     const [logo, setLogo] = useState<string>('');
@@ -361,8 +362,8 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
         setValue('category', allowedCategories[0]);
     }
 
-    const { blogs: allBlogs } = useGetBlogs({}, { page: 1, limit: 1000 });
-    const { languages, loading: loadingLanguages } = useAllLanguages();
+    const { blogs: allBlogs } = useGetBlogs({}, { page: 1, limit: 1000, skip: !isOpen });
+    const { languages, loading: loadingLanguages } = useAllLanguages({ skip: !isOpen });
 
     const featuredImageDropzone = useDropzone({
         accept: { 'image/*': ['.jpeg', '.jpg', '.png'] },
@@ -505,7 +506,7 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                 setWebsiteDetailsEnabled(!!(blog.websiteName || blog.websiteURL));
                 if (blog.authorId) {
                     const author = users.find(user => user.id === blog.authorId);
-                    setSelectedAuthor(author || null);
+                    setSelectedAuthor(author || blog.author || null);
                 }
                 else {
                     setSelectedAuthor(null);
