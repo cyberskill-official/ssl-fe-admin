@@ -15,6 +15,7 @@ import { E_FormMode } from '#shared/typescript';
 
 import type { I_AdvertisementFormRef } from './advertisement.type';
 
+import { useAuth } from '../authn';
 import { useGetBlogs } from '../blog/blog.hook';
 import { useGetDestinations } from '../destination/destination.hook';
 import { useUpload } from '../upload/upload.hook';
@@ -98,6 +99,7 @@ export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creatin
     ref?: React.RefObject<I_AdvertisementFormRef | null>;
 }) {
     const { t } = useTranslate('advertisement');
+    const { auth } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [mode, setMode] = useState<E_FormMode>(E_FormMode.Create);
     const [currentAdvertisement, setCurrentAdvertisement] = useState<T_Advertisement>();
@@ -274,6 +276,7 @@ export function AdvertisementForm({ ref, onCreateSubmit, onUpdateSubmit, creatin
 
         const formData: Input_CreateAdvertisement = {
             ...data,
+            createdById: auth?.user?.id || undefined,
             image: images[0] || currentAdvertisement?.image || '',
             slot: data.placementType === E_AdvertisementPlacementType.DASHBOARD ? data.slot as E_AdvertisementSlot : undefined,
             placementType: data.placementType as E_AdvertisementPlacementType,

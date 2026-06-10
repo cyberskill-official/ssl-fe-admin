@@ -10,6 +10,7 @@ import { useTranslate } from '#shared/i18n';
 import { usePortal } from '#shared/portal';
 
 import { BlogForm } from './blog-form';
+import { getBlogFormText, getBlogText } from './blog-text';
 import { useCreateBlog, useDeleteBlog, useGetBlogLazy, useGetBlogs, useUpdateBlog } from './blog.hook';
 import { BlogList } from './blog.list';
 
@@ -68,9 +69,9 @@ export default function BlogPage() {
             return rawBlogs;
         const searchTerm = search.toLowerCase().trim();
         return rawBlogs.filter((blog: T_Blog) =>
-            blog?.title?.toLowerCase().includes(searchTerm)
-            || blog?.authorName?.toLowerCase().includes(searchTerm)
-            || blog?.hostName?.toLowerCase().includes(searchTerm),
+            getBlogText(blog?.title).toLowerCase().includes(searchTerm)
+            || getBlogText(blog?.authorName).toLowerCase().includes(searchTerm)
+            || getBlogText(blog?.hostName).toLowerCase().includes(searchTerm),
         );
     }, [rawBlogs, search, isSearching]);
 
@@ -137,21 +138,21 @@ export default function BlogPage() {
             ...data,
             category: data.category ?? E_BlogCategory.TRAVELS,
             type: data.type ?? E_BlogType.BLOG,
-            title: data.title ?? '',
-            authorName: data.authorName ?? '',
-            websiteName: data.websiteName ?? '',
-            websiteURL: data.websiteURL ?? '',
-            hostName: data.hostName ?? '',
-            content: data.content ?? '',
-            contentHeadline: data.contentHeadline ?? '',
-            contentSubHeadline: data.contentSubHeadline ?? '',
-            featuredImage: data.featuredImage ?? '',
-            logo: data.logo ?? '',
-            cover: data.cover ?? '',
-            file: data.file ?? '',
+            title: getBlogFormText(data.title),
+            authorName: getBlogFormText(data.authorName),
+            websiteName: getBlogFormText(data.websiteName),
+            websiteURL: getBlogFormText(data.websiteURL),
+            hostName: getBlogFormText(data.hostName),
+            content: getBlogText(data.content),
+            contentHeadline: getBlogFormText(data.contentHeadline),
+            contentSubHeadline: getBlogFormText(data.contentSubHeadline),
+            featuredImage: getBlogFormText(data.featuredImage),
+            logo: getBlogFormText(data.logo),
+            cover: getBlogFormText(data.cover),
+            file: getBlogFormText(data.file),
             socialLinks: Array.isArray(data.socialLinks)
                 ? data.socialLinks.filter(l => l && l.type && l.url)
-                        .map(l => ({ type: l!.type as E_SocialPlatform, url: l!.url || '' }))
+                        .map(l => ({ type: l!.type as E_SocialPlatform, url: getBlogFormText(l!.url) }))
                 : [],
         };
         await createBlog(safeData);
@@ -163,21 +164,21 @@ export default function BlogPage() {
             ...data,
             category: data.category ?? E_BlogCategory.TRAVELS,
             type: data.type ?? E_BlogType.BLOG,
-            title: data.title ?? '',
-            authorName: data.authorName ?? '',
-            websiteName: data.websiteName ?? '',
-            websiteURL: data.websiteURL ?? '',
-            hostName: data.hostName ?? '',
-            content: data.content ?? '',
-            contentHeadline: data.contentHeadline ?? '',
-            contentSubHeadline: data.contentSubHeadline ?? '',
-            featuredImage: data.featuredImage ?? '',
-            logo: data.logo ?? '',
-            cover: data.cover ?? '',
-            file: data.file ?? '',
+            title: getBlogFormText(data.title),
+            authorName: getBlogFormText(data.authorName),
+            websiteName: getBlogFormText(data.websiteName),
+            websiteURL: getBlogFormText(data.websiteURL),
+            hostName: getBlogFormText(data.hostName),
+            content: getBlogText(data.content),
+            contentHeadline: getBlogFormText(data.contentHeadline),
+            contentSubHeadline: getBlogFormText(data.contentSubHeadline),
+            featuredImage: getBlogFormText(data.featuredImage),
+            logo: getBlogFormText(data.logo),
+            cover: getBlogFormText(data.cover),
+            file: getBlogFormText(data.file),
             socialLinks: Array.isArray(data.socialLinks)
                 ? data.socialLinks.filter(l => l && l.type && l.url)
-                        .map(l => ({ type: l!.type as E_SocialPlatform, url: l!.url || '' }))
+                        .map(l => ({ type: l!.type as E_SocialPlatform, url: getBlogFormText(l!.url) }))
                 : [],
         };
         await updateBlog({ id }, safeData);

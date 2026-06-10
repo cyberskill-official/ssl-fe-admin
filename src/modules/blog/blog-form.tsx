@@ -27,6 +27,7 @@ import { useTranslate } from '#shared/i18n';
 import { E_FormMode } from '#shared/typescript';
 
 import { useAllLanguages } from '../language/language.hook';
+import { getBlogFormText, getBlogText } from './blog-text';
 import { useGetBlogs } from './blog.hook';
 import { BlogSocialLinks } from './components/blog-social-links';
 import { getPodcastEmbedHeight, normalizePodcastEmbedUrl } from './podcast-embed';
@@ -60,10 +61,10 @@ function BlogPreview({ formData, type, selectedAuthor }: { formData: any; type: 
                             <span className="hidden sm:inline">Translate</span>
                         </Button>
                         <h1 className="text-3xl font-serif text-white mb-4 uppercase break-words">
-                            {formData.title || 'No title'}
+                            {getBlogText(formData.title, 'No title')}
                         </h1>
                         <p className="text-xl text-white font-serif italic break-words">
-                            {formData.contentSubHeadline || formData.contentHeadline || ''}
+                            {getBlogText(formData.contentSubHeadline || formData.contentHeadline)}
                         </p>
                     </div>
 
@@ -75,7 +76,7 @@ function BlogPreview({ formData, type, selectedAuthor }: { formData: any; type: 
                                 {' '}
                                 by
                                 {' '}
-                                {formData.authorName || formData.hostName || 'Unknown'}
+                                {getBlogText(formData.authorName || formData.hostName, 'Unknown')}
                             </span>
                         </div>
 
@@ -83,7 +84,7 @@ function BlogPreview({ formData, type, selectedAuthor }: { formData: any; type: 
                             <div className="mb-6">
                                 <img
                                     src={formData.featuredImage}
-                                    alt={formData.title || 'Featured image'}
+                                    alt={getBlogText(formData.title, 'Featured image')}
                                     className="w-full h-64 object-cover rounded-lg shadow-lg"
                                 />
                             </div>
@@ -123,7 +124,7 @@ function BlogPreview({ formData, type, selectedAuthor }: { formData: any; type: 
                                 <div className="bg-red-800/40 backdrop-blur-sm p-6 rounded-lg border border-red-600/30">
                                     <iframe
                                         src={podcastEmbedUrl}
-                                        title={formData.title || 'Podcast embed'}
+                                        title={getBlogText(formData.title, 'Podcast embed')}
                                         frameBorder="0"
                                         allowFullScreen
                                         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
@@ -148,8 +149,8 @@ function BlogPreview({ formData, type, selectedAuthor }: { formData: any; type: 
                                             />
                                         )}
                                         <div>
-                                            <h3 className="text-white font-semibold">{formData.title}</h3>
-                                            <p className="text-gray-300">{formData.hostName}</p>
+                                            <h3 className="text-white font-semibold">{getBlogText(formData.title)}</h3>
+                                            <p className="text-gray-300">{getBlogText(formData.hostName)}</p>
                                         </div>
                                     </div>
                                     <audio controls className="w-full" src={formData.file}>
@@ -479,15 +480,28 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                 const formData = {
                     ...FORM_DEFAULT_VALUES,
                     ...blog,
+                    title: getBlogFormText(blog.title),
+                    authorName: getBlogFormText(blog.authorName),
+                    websiteName: getBlogFormText(blog.websiteName),
+                    websiteURL: getBlogFormText(blog.websiteURL),
+                    featuredImage: getBlogFormText(blog.featuredImage),
+                    contentHeadline: getBlogFormText(blog.contentHeadline),
+                    contentSubHeadline: getBlogFormText(blog.contentSubHeadline),
+                    content: getBlogText(blog.content),
+                    hostName: getBlogFormText(blog.hostName),
+                    logo: getBlogFormText(blog.logo),
+                    cover: getBlogFormText(blog.cover),
+                    file: getBlogFormText(blog.file),
+                    iframe: getBlogFormText(blog.iframe),
                     seo: blog.seo || FORM_DEFAULT_VALUES.seo,
                 };
                 reset(formData);
-                setFeaturedImage(blog.featuredImage || '');
-                setLogo(blog.logo || '');
-                setCover(blog.cover || '');
-                setFile(blog.file || '');
-                setSocialImage(blog.seo?.socialImage || '');
-                setContent(blog.content || '');
+                setFeaturedImage(getBlogFormText(blog.featuredImage));
+                setLogo(getBlogFormText(blog.logo));
+                setCover(getBlogFormText(blog.cover));
+                setFile(getBlogFormText(blog.file));
+                setSocialImage(getBlogFormText(blog.seo?.socialImage));
+                setContent(getBlogText(blog.content));
                 setWebsiteDetailsEnabled(!!(blog.websiteName || blog.websiteURL));
                 if (blog.authorId) {
                     const author = users.find(user => user.id === blog.authorId);
@@ -581,6 +595,19 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                             if (data[key] !== undefined)
                                 (updateData as any)[key] = data[key];
                         });
+                        updateData.title = getBlogFormText(updateData.title);
+                        updateData.authorName = getBlogFormText(updateData.authorName);
+                        updateData.websiteName = getBlogFormText(updateData.websiteName);
+                        updateData.websiteURL = getBlogFormText(updateData.websiteURL);
+                        updateData.featuredImage = getBlogFormText(updateData.featuredImage);
+                        updateData.contentHeadline = getBlogFormText(updateData.contentHeadline);
+                        updateData.contentSubHeadline = getBlogFormText(updateData.contentSubHeadline);
+                        updateData.content = getBlogText(updateData.content);
+                        updateData.hostName = getBlogFormText(updateData.hostName);
+                        updateData.logo = getBlogFormText(updateData.logo);
+                        updateData.cover = getBlogFormText(updateData.cover);
+                        updateData.file = getBlogFormText(updateData.file);
+                        updateData.iframe = getBlogFormText(updateData.iframe);
                         if (type === E_BlogType.PODCAST) {
                             if (!updateData.authorId && updateData.hostName) {
                                 updateData.authorId = updateData.hostName;
@@ -820,7 +847,7 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                                                                                                 padding: '0.5rem',
                                                                                             }}
                                                                                         >
-                                                                                            {blog.title}
+                                                                                            {getBlogText(blog.title)}
                                                                                         </option>
                                                                                     );
                                                                                 })
@@ -1112,16 +1139,16 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                                         <BlogSocialLinks
                                             formData={{
                                                 ...getValues(),
-                                                title: getValues().title ?? '',
-                                                authorName: getValues().authorName ?? '',
-                                                websiteName: getValues().websiteName ?? '',
-                                                websiteURL: getValues().websiteURL ?? '',
+                                                title: getBlogFormText(getValues().title),
+                                                authorName: getBlogFormText(getValues().authorName),
+                                                websiteName: getBlogFormText(getValues().websiteName),
+                                                websiteURL: getBlogFormText(getValues().websiteURL),
                                                 type: getValues().type ?? E_BlogType.BLOG,
                                                 category: getValues().category ?? E_BlogCategory.DATING,
-                                                featuredImage: getValues().featuredImage ?? '',
-                                                contentHeadline: getValues().contentHeadline ?? '',
-                                                contentSubHeadline: getValues().contentSubHeadline ?? '',
-                                                content: getValues().content ?? '',
+                                                featuredImage: getBlogFormText(getValues().featuredImage),
+                                                contentHeadline: getBlogFormText(getValues().contentHeadline),
+                                                contentSubHeadline: getBlogFormText(getValues().contentSubHeadline),
+                                                content: getBlogText(getValues().content),
                                                 socialLinks: (getValues().socialLinks ?? []).filter(
                                                     (l): l is { type: E_SocialPlatform; url: string } => !!l && !!l.type,
                                                 ),

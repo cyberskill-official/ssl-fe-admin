@@ -9,6 +9,7 @@ import { DataTable } from '#shared/component/data-table';
 import { E_BlogType } from '#shared/graphql';
 import { useTranslate } from '#shared/i18n';
 
+import { getBlogText } from './blog-text';
 import { BlogCard } from './blog.card';
 
 export function BlogList({
@@ -100,7 +101,7 @@ export function BlogList({
             accessorKey: 'title',
             header: t('title'),
             cell: ({ row }: any) => (
-                <div className="font-semibold text-gray-900 dark:text-gray-100">{row.original.title}</div>
+                <div className="font-semibold text-gray-900 dark:text-gray-100">{getBlogText(row.original.title, '-')}</div>
             ),
         },
         {
@@ -138,7 +139,7 @@ export function BlogList({
                 return (
                     <div className="flex items-center gap-2 text-xs">
                         <User className="w-3 h-3" />
-                        <span className="text-gray-500">{blog.hostName || t('unknown-author')}</span>
+                        <span className="text-gray-500">{getBlogText(blog.hostName, t('unknown-author'))}</span>
                     </div>
                 );
             },
