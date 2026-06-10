@@ -1,6 +1,6 @@
 import { FileText } from 'lucide-react';
 import { motion } from 'motion/react';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { E_SocialPlatform, Input_CreateBlog, Input_UpdateBlog, T_Blog } from '#shared/graphql';
 
@@ -33,7 +33,7 @@ export default function BlogPage() {
     const [selectedType, setSelectedType] = useState<'ALL' | E_BlogType>('ALL');
     const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
     const [blogToDelete, setBlogToDelete] = useState<T_Blog | null>(null);
-    const [blogFormApi, setBlogFormApi] = useState<I_BlogFormApi | null>(null);
+    const blogFormApiRef = useRef<I_BlogFormApi | null>(null);
     const [shouldRenderBlogForm, setShouldRenderBlogForm] = useState(false);
     const [pendingFormBlog, setPendingFormBlog] = useState<T_Blog | undefined>();
     const [formOpenVersion, setFormOpenVersion] = useState(0);
@@ -97,11 +97,11 @@ export default function BlogPage() {
     const { deleteBlog } = useDeleteBlog();
 
     useEffect(() => {
-        if (!shouldRenderBlogForm || !blogFormApi)
+        if (!shouldRenderBlogForm || !blogFormApiRef.current)
             return;
 
-        blogFormApi.open(pendingFormBlog);
-    }, [blogFormApi, formOpenVersion, pendingFormBlog, shouldRenderBlogForm]);
+        blogFormApiRef.current.open(pendingFormBlog);
+    }, [formOpenVersion, pendingFormBlog, shouldRenderBlogForm]);
 
     const _handleCreateBlog = useCallback(() => {
         setPendingFormBlog(undefined);
@@ -266,7 +266,7 @@ export default function BlogPage() {
                 {shouldRenderBlogForm && (
                     <Suspense fallback={null}>
                         <BlogForm
-                            ref={setBlogFormApi}
+                            ref={(api) => { blogFormApiRef.current = api; }}
                             onCreateSubmit={_handleCreateSubmit}
                             onUpdateSubmit={_handleUpdateSubmit}
                             creating={creatingBlog}
