@@ -321,9 +321,6 @@ export function BlogList({
                     className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-white/30 bg-white/90 shadow-xl backdrop-blur-xl dark:border-gray-600/50 dark:bg-gray-800/95"
                 >
                     <div className="h-12 w-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin" />
-                    <p className="mt-4 text-sm font-semibold text-gray-600 dark:text-gray-300">
-                        {t('loading-blogs') || 'Loading blogs...'}
-                    </p>
                 </motion.div>
             )}
             {!loading && error && blogs.length === 0 && (
