@@ -1,4 +1,3 @@
-import { Loading } from '@cyberskill/shared/react/loading';
 import { Edit, FileText, Grid3X3, List, Plus, Search, Tag, Trash2, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
@@ -218,8 +217,6 @@ export function BlogList({
 
     return (
         <div className="space-y-6">
-            {loading && <Loading />}
-
             {/* Toolbar - styled like destination */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -313,67 +310,77 @@ export function BlogList({
                 </div>
             </motion.div>
             {/* Content */}
-            {!loading && blogs.length === 0
-                ? (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex flex-col items-center justify-center py-20 text-center"
-                        >
-                            <div className="rounded-full bg-purple-100 dark:bg-purple-900/30 p-6 mb-4">
-                                <FileText className="h-12 w-12 text-purple-400 dark:text-purple-500" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                {t('no-blogs-found')}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
-                                {search || selectedCategory !== 'ALL' || selectedStatus !== 'ALL' || selectedType !== 'ALL'
-                                    ? t('try-adjusting-filters')
-                                    : t('create-first-blog')}
-                            </p>
-                        </motion.div>
-                    )
-                : viewMode === 'grid'
-                    ? (
-                            <AnimatePresence>
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-                                >
-                                    {blogs.map(blog => (
-                                        <BlogCard
-                                            key={blog.id}
-                                            blog={blog}
-                                            onEdit={onEditBlog!}
-                                            onDelete={onDeleteBlog!}
-                                            onToggleStatus={onToggleStatus!}
-                                            updatingStatusId={updatingStatusId}
-                                            t={t}
-                                        />
-                                    ))}
-                                </motion.div>
-                            </AnimatePresence>
-                        )
-                    : (
-                            <DataTable
-                                columns={columns}
-                                data={blogs}
-                                searchKey="title"
-                                searchPlaceholder={t('search-blog')}
-                                showPagination={false}
-                                showToolbar={false}
-                                showColumnVisibility={true}
-                                pageSize={pageSize}
-                                page={page}
-                                totalItems={totalDocs}
-                                onPageChange={onPageChange}
-                                onPageSizeChange={onPageSizeChange}
-                                searchValue={search}
-                                onSearchChange={onSearchChange}
+            {loading && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-white/30 bg-white/90 shadow-xl backdrop-blur-xl dark:border-gray-600/50 dark:bg-gray-800/95"
+                >
+                    <div className="h-12 w-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin" />
+                    <p className="mt-4 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                        {t('loading-blogs') || 'Loading blogs...'}
+                    </p>
+                </motion.div>
+            )}
+            {!loading && blogs.length === 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center justify-center py-20 text-center"
+                >
+                    <div className="rounded-full bg-purple-100 dark:bg-purple-900/30 p-6 mb-4">
+                        <FileText className="h-12 w-12 text-purple-400 dark:text-purple-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        {t('no-blogs-found')}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                        {search || selectedCategory !== 'ALL' || selectedStatus !== 'ALL' || selectedType !== 'ALL'
+                            ? t('try-adjusting-filters')
+                            : t('create-first-blog')}
+                    </p>
+                </motion.div>
+            )}
+            {!loading && blogs.length > 0 && viewMode === 'grid' && (
+                <AnimatePresence>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                    >
+                        {blogs.map(blog => (
+                            <BlogCard
+                                key={blog.id}
+                                blog={blog}
+                                onEdit={onEditBlog!}
+                                onDelete={onDeleteBlog!}
+                                onToggleStatus={onToggleStatus!}
+                                updatingStatusId={updatingStatusId}
+                                t={t}
                             />
-                        )}
+                        ))}
+                    </motion.div>
+                </AnimatePresence>
+            )}
+            {!loading && blogs.length > 0 && viewMode === 'table' && (
+                <DataTable
+                    columns={columns}
+                    data={blogs}
+                    searchKey="title"
+                    searchPlaceholder={t('search-blog')}
+                    showPagination={false}
+                    showToolbar={false}
+                    showColumnVisibility={true}
+                    pageSize={pageSize}
+                    page={page}
+                    totalItems={totalDocs}
+                    onPageChange={onPageChange}
+                    onPageSizeChange={onPageSizeChange}
+                    searchValue={search}
+                    onSearchChange={onSearchChange}
+                />
+            )}
             {/* Shared Pagination for both Grid and Table views */}
             {(typeof totalDocs === 'number' && totalDocs > 0) && (
                 <motion.div
