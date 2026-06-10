@@ -4,6 +4,7 @@ query getBlog($filter: Input_QueryBlog!, $projection: JSON, $options: JSON, $pop
         message
         result {
             ...F_Blog
+            content
         }
     }
 }

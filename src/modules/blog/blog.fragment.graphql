@@ -20,7 +20,6 @@ fragment F_Blog on T_Blog {
     featuredImage
     contentHeadline
     contentSubHeadline
-    content
     relatedBlogsIds
     relatedBlogs {
         ...F_RelatedBlog
