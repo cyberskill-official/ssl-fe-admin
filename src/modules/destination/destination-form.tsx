@@ -60,6 +60,10 @@ function getFormText(value: unknown) {
     return getDestinationText(value).trim();
 }
 
+function getOptionText(value: unknown, fallback = '') {
+    return getDestinationText(value, fallback).trim();
+}
+
 const FORM_DEFAULT_VALUES: I_DestinationFormData = {
     type: E_DestinationType.CLUB,
     name: '',
@@ -566,7 +570,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 if (countryFeature) {
                     const countryName = countryFeature.text;
                     const foundCountry = countries?.find(c =>
-                        c.name?.toLowerCase() === countryName.toLowerCase(),
+                        getOptionText(c.name).toLowerCase() === countryName.toLowerCase(),
                     );
 
                     if (foundCountry) {
@@ -581,7 +585,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                             const cityName = cityFeature.text;
                             setTimeout(() => {
                                 const foundCity = cities?.find(c =>
-                                    c.countryId === foundCountry.id && c.name?.toLowerCase() === cityName.toLowerCase(),
+                                    c.countryId === foundCountry.id && getOptionText(c.name).toLowerCase() === cityName.toLowerCase(),
                                 );
                                 if (foundCity) {
                                     setValue('location.cityId', foundCity.id);
@@ -649,7 +653,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 if (countryFeature) {
                     const countryName = countryFeature.text;
                     const foundCountry = countries?.find(c =>
-                        c.name?.toLowerCase() === countryName.toLowerCase(),
+                        getOptionText(c.name).toLowerCase() === countryName.toLowerCase(),
                     );
 
                     if (foundCountry) {
@@ -662,7 +666,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                             const cityName = cityFeature.text;
                             const hotelCities = hotelCitiesCache[foundCountry.id] || [];
                             const foundCity = hotelCities.find(c =>
-                                c.name?.toLowerCase() === cityName.toLowerCase(),
+                                getOptionText(c.name).toLowerCase() === cityName.toLowerCase(),
                             );
 
                             if (foundCity) {
@@ -976,7 +980,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                             ?.filter(country => country !== null && country !== undefined)
                                                             ?.map(country => ({
                                                                 id: country.id!,
-                                                                name: country.name!,
+                                                                name: getOptionText(country.name, 'Unknown Country'),
                                                             })) || []}
                                                         value={field.value ?? ''}
                                                         onChange={(value) => {
@@ -1004,7 +1008,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                 ?.filter(city => city !== null && city !== undefined)
                                                                 ?.map(city => ({
                                                                     id: city.id!,
-                                                                    name: city.name!,
+                                                                    name: getOptionText(city.name, 'Unknown City'),
                                                                 })) || []}
                                                             value={field.value ?? ''}
                                                             onChange={(value) => {
@@ -1848,7 +1852,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                             ?.filter(country => country !== null && country !== undefined)
                                                                             ?.map(country => ({
                                                                                 id: country.id!,
-                                                                                name: country.name!,
+                                                                                name: getOptionText(country.name, 'Unknown Country'),
                                                                             })) || []}
                                                                         value={field.value ?? ''}
                                                                         onChange={(value) => {
@@ -1877,7 +1881,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                                     ?.filter(city => city !== null && city !== undefined)
                                                                                     ?.map(city => ({
                                                                                         id: city.id!,
-                                                                                        name: city.name!,
+                                                                                        name: getOptionText(city.name, 'Unknown City'),
                                                                                     })) || []}
                                                                                 value={field.value ?? ''}
                                                                                 onChange={value => field.onChange(value)}
@@ -2201,13 +2205,13 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                         apiKey={env.VITE_MAPTILER_KEY}
                         countries={countries?.map(country => ({
                             id: country.id!,
-                            name: country.name!,
+                            name: getOptionText(country.name, 'Unknown Country'),
                             latitude: country.latitude || undefined,
                             longitude: country.longitude || undefined,
                         })) || []}
                         cities={cities?.map(city => ({
                             id: city.id!,
-                            name: city.name!,
+                            name: getOptionText(city.name, 'Unknown City'),
                             latitude: city.latitude || undefined,
                             longitude: city.longitude || undefined,
                             countryId: city.countryId!,
@@ -2231,13 +2235,13 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                         apiKey={env.VITE_MAPTILER_KEY}
                         countries={countries?.map(country => ({
                             id: country.id!,
-                            name: country.name!,
+                            name: getOptionText(country.name, 'Unknown Country'),
                             latitude: country.latitude || undefined,
                             longitude: country.longitude || undefined,
                         })) || []}
                         cities={cities?.map(city => ({
                             id: city.id!,
-                            name: city.name!,
+                            name: getOptionText(city.name, 'Unknown City'),
                             latitude: city.latitude || undefined,
                             longitude: city.longitude || undefined,
                             countryId: city.countryId!,

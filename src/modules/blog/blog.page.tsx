@@ -1,6 +1,6 @@
 import { FileText } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { E_SocialPlatform, Input_CreateBlog, Input_UpdateBlog, T_Blog } from '#shared/graphql';
 
@@ -9,10 +9,16 @@ import { E_BlogCategory, E_BlogType } from '#shared/graphql';
 import { useTranslate } from '#shared/i18n';
 import { usePortal } from '#shared/portal';
 
-import { BlogForm } from './blog-form';
 import { getBlogFormText, getBlogText } from './blog-text';
 import { useCreateBlog, useDeleteBlog, useGetBlogLazy, useGetBlogs, useUpdateBlog } from './blog.hook';
 import { BlogList } from './blog.list';
+
+const BlogForm = lazy(() => import('./blog-form').then(module => ({ default: module.BlogForm })));
+
+interface I_BlogFormApi {
+    open: (blog?: T_Blog) => void;
+    close: () => void;
+}
 
 export default function BlogPage() {
     const { t } = useTranslate('blog');
@@ -27,7 +33,10 @@ export default function BlogPage() {
     const [selectedType, setSelectedType] = useState<'ALL' | E_BlogType>('ALL');
     const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
     const [blogToDelete, setBlogToDelete] = useState<T_Blog | null>(null);
-    const blogFormRef = useRef<any>(null);
+    const [blogFormApi, setBlogFormApi] = useState<I_BlogFormApi | null>(null);
+    const [shouldRenderBlogForm, setShouldRenderBlogForm] = useState(false);
+    const [pendingFormBlog, setPendingFormBlog] = useState<T_Blog | undefined>();
+    const [formOpenVersion, setFormOpenVersion] = useState(0);
 
     useEffect(() => {
         setHeader({
@@ -61,7 +70,7 @@ export default function BlogPage() {
         sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
     }), [page, pageSize, sortField, sortOrder, isSearching]);
 
-    const { blogs: rawBlogs, refetch, totalDocs: rawTotalDocs } = useGetBlogs(filter, options);
+    const { blogs: rawBlogs, loading, refetch, totalDocs: rawTotalDocs } = useGetBlogs(filter, options);
 
     const filteredBlogs = useMemo(() => {
         if (!isSearching)
@@ -87,8 +96,17 @@ export default function BlogPage() {
     const { updateBlog, loading: updatingBlog } = useUpdateBlog();
     const { deleteBlog } = useDeleteBlog();
 
+    useEffect(() => {
+        if (!shouldRenderBlogForm || !blogFormApi)
+            return;
+
+        blogFormApi.open(pendingFormBlog);
+    }, [blogFormApi, formOpenVersion, pendingFormBlog, shouldRenderBlogForm]);
+
     const _handleCreateBlog = useCallback(() => {
-        blogFormRef.current?.open();
+        setPendingFormBlog(undefined);
+        setShouldRenderBlogForm(true);
+        setFormOpenVersion(version => version + 1);
     }, []);
 
     const _handleEditBlog = useCallback(async (blog: T_Blog) => {
@@ -96,17 +114,15 @@ export default function BlogPage() {
         try {
             const { data } = await getBlog({ id: blog.id });
             const fullBlog = data?.getBlog?.result;
-            if (fullBlog) {
-                blogFormRef.current?.open(fullBlog);
-            }
-            else {
-                // Fallback to the list data if fetch fails
-                blogFormRef.current?.open(blog);
-            }
+            setPendingFormBlog(fullBlog || blog);
+            setShouldRenderBlogForm(true);
+            setFormOpenVersion(version => version + 1);
         }
         catch (error) {
             console.error('Failed to fetch blog details:', error);
-            blogFormRef.current?.open(blog);
+            setPendingFormBlog(blog);
+            setShouldRenderBlogForm(true);
+            setFormOpenVersion(version => version + 1);
         }
     }, [getBlog]);
 
@@ -219,6 +235,7 @@ export default function BlogPage() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 p-6">
                 <BlogList
                     blogs={blogs}
+                    loading={loading}
                     onEditBlog={_handleEditBlog}
                     onCreateBlog={_handleCreateBlog}
                     onDeleteBlog={_handleDeleteBlog}
@@ -244,14 +261,18 @@ export default function BlogPage() {
                         setPage(1);
                     }}
                 />
-                <BlogForm
-                    ref={blogFormRef}
-                    onCreateSubmit={_handleCreateSubmit}
-                    onUpdateSubmit={_handleUpdateSubmit}
-                    creating={creatingBlog}
-                    updating={updatingBlog}
-                    fetching={fetchingBlog}
-                />
+                {shouldRenderBlogForm && (
+                    <Suspense fallback={null}>
+                        <BlogForm
+                            ref={setBlogFormApi}
+                            onCreateSubmit={_handleCreateSubmit}
+                            onUpdateSubmit={_handleUpdateSubmit}
+                            creating={creatingBlog}
+                            updating={updatingBlog}
+                            fetching={fetchingBlog}
+                        />
+                    </Suspense>
+                )}
                 <ConfirmDialog
                     open={!!blogToDelete}
                     title={t('delete-blog')}

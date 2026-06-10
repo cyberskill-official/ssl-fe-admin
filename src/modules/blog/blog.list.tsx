@@ -1,3 +1,4 @@
+import { Loading } from '@cyberskill/shared/react/loading';
 import { Edit, FileText, Grid3X3, List, Plus, Search, Tag, Trash2, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
@@ -14,6 +15,7 @@ import { BlogCard } from './blog.card';
 
 export function BlogList({
     blogs,
+    loading,
     onEditBlog,
     onCreateBlog,
     onDeleteBlog,
@@ -37,6 +39,7 @@ export function BlogList({
     onTypeChange,
 }: {
     blogs: T_Blog[];
+    loading?: boolean;
     onEditBlog?: (blog: T_Blog) => void;
     onCreateBlog?: () => void;
     onDeleteBlog?: (blog: T_Blog) => void;
@@ -215,6 +218,8 @@ export function BlogList({
 
     return (
         <div className="space-y-6">
+            {loading && <Loading />}
+
             {/* Toolbar - styled like destination */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -308,7 +313,7 @@ export function BlogList({
                 </div>
             </motion.div>
             {/* Content */}
-            {blogs.length === 0
+            {!loading && blogs.length === 0
                 ? (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}

@@ -50,6 +50,7 @@ export function useGetDestination(
                 ],
             },
             fetchPolicy: 'network-only',
+            skip: !filter?.id,
         },
     );
 
