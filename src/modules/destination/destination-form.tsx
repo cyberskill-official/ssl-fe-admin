@@ -1178,7 +1178,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                             <Controller
                                                 name="websiteURL"
                                                 control={control}
-                                                rules={{ required: t('error-enter-website-url') }}
+                                                rules={{ required: t('error-enter-website-url'), validate: (v) => { if (!v) return true; try { new URL((v || '').trim()); return true; } catch { return t('error-invalid-url'); } } }}
                                                 render={({ field }) => (
                                                     <div className="relative">
                                                         <Input
@@ -2042,7 +2042,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                     <Controller
                                                         name={`nearbyHotels.${index}.url`}
                                                         control={control}
-                                                        rules={{ required: t('error-enter-website-url') }}
+                                                        rules={{ required: t('error-enter-website-url'), validate: (v) => { if (!v) return true; try { new URL((v || '').trim()); return true; } catch { return t('error-invalid-url'); } } }}
                                                         render={({ field }) => (
                                                             <div className="relative">
                                                                 <Input
