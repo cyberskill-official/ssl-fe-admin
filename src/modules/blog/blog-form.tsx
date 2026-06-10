@@ -299,14 +299,8 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
     const { upload } = useUpload();
     const { users } = useGetUsers({}, {
         page: 1,
-        limit: 1000,
+        limit: 50,
         sort: { username: 1 },
-        populate: [
-            {
-                path: 'partner1',
-                populate: ['gallery'],
-            },
-        ],
         skip: !isOpen,
     });
     const [featuredImage, setFeaturedImage] = useState<string>('');
