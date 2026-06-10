@@ -5,6 +5,8 @@ import type { T_Blog } from '#shared/graphql';
 
 import { Badge, Button, Switch } from '#shared/component';
 
+import { getBlogText } from './blog-text';
+
 export function BlogCard({
     blog,
     onEdit,
@@ -24,6 +26,8 @@ export function BlogCard({
     const category = blog.category || '';
     const featuredImage = blog.featuredImage;
     const author = blog.author;
+    const title = getBlogText(blog.title, 'Blog');
+    const hostName = getBlogText(blog.hostName, t('unknown-author'));
 
     const _getCategoryColor = (category: string) => {
         const colors: Record<string, string> = {
@@ -49,7 +53,7 @@ export function BlogCard({
                     ? (
                             <img
                                 src={featuredImage}
-                                alt={blog.title || 'Blog'}
+                                alt={title}
                                 className="w-full h-full object-cover"
                             />
                         )
@@ -92,7 +96,7 @@ export function BlogCard({
 
                 {/* Blog Title */}
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 text-sm leading-tight line-clamp-2">
-                    {blog.title}
+                    {title}
                 </h3>
 
                 {/* Author */}
@@ -111,7 +115,7 @@ export function BlogCard({
                                     </a>
                                 )
                             : (
-                                    <span>{blog.hostName}</span>
+                                    <span>{hostName}</span>
                                 )}
                     </div>
                 </div>

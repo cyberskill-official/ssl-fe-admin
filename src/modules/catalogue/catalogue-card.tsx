@@ -1,3 +1,4 @@
+/* eslint-disable react-dom/no-unsafe-iframe-sandbox */
 import { Edit, Image, Play, Trash2, Video } from 'lucide-react';
 import { motion } from 'motion/react';
 import * as React from 'react';
@@ -7,14 +8,61 @@ import type { T_Catalogue } from '#shared/graphql';
 
 import { Badge, Button, Dialog, DialogContent, DialogHeader, DialogTitle } from '#shared/component';
 
-const IMAGE_EXT_RE = /jpg|jpeg|png|gif|webp$/i;
-const VIDEO_EXT_RE = /mp4|avi|mov|wmv|webm|ogg$/i;
+function isEmbedUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const u = url.toLowerCase();
+    return (
+        u.includes('iframe.mediadelivery.net')
+        || u.includes('mediadelivery.net')
+        || u.includes('youtube.com')
+        || u.includes('youtu.be')
+        || u.includes('vimeo.com')
+        || u.includes('/embed/')
+    );
+}
+
+function getMediaExtension(urlStr?: string | null) {
+    if (!urlStr)
+        return '';
+    try {
+        const url = new URL(urlStr);
+        const pathname = url.pathname;
+        const filename = pathname.split('/').pop() || '';
+        const lastDot = filename.lastIndexOf('.');
+        if (lastDot === -1)
+            return '';
+        return filename.slice(lastDot + 1).toLowerCase();
+    }
+    catch {
+        const cleanUrl = (urlStr.split('?')[0] ?? '').split('#')[0] ?? '';
+        const filename = cleanUrl.split('/').pop() ?? '';
+        const lastDot = filename.lastIndexOf('.');
+        if (lastDot === -1)
+            return '';
+        return filename.slice(lastDot + 1).toLowerCase();
+    }
+}
+
+function isImageUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const ext = getMediaExtension(url);
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(ext);
+}
+
+function isVideoUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const ext = getMediaExtension(url);
+    return ['mp4', 'avi', 'mov', 'wmv', 'webm', 'ogg', 'mkv', '3gp'].includes(ext);
+}
 
 interface I_CatalogueCardProps {
     catalogue: T_Catalogue;
     onEdit?: (catalogue: T_Catalogue) => void;
     onDelete?: (catalogue: T_Catalogue) => void;
-    t: (key: string, params?: Record<string, any>) => string;
+    t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 const catalogueTypeIcons = {
@@ -36,6 +84,11 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
         setIsModalOpen(true);
     };
 
+    const hasUrl = !!catalogue.url;
+    const isImage = isImageUrl(catalogue.url);
+    const isVideo = isVideoUrl(catalogue.url);
+    const isEmbed = isEmbedUrl(catalogue.url);
+
     return (
         <>
             <motion.div
@@ -44,14 +97,14 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
                     y: -4,
                     transition: { duration: 0.2 },
                 }}
-                className={`group relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-xl border border-white/30 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300 ${catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'shadow-gray-500/30'}`}
+                className={`group relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-xl border border-white/30 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300 ${catalogue.type ? (catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'shadow-gray-500/30') : 'shadow-gray-500/30'}`}
             >
                 {/* Card Content */}
                 <div className="p-4">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-3">
-                        <div className={`p-2 rounded-lg bg-gradient-to-br ${catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'from-gray-400 to-gray-600'}`}>
-                            {catalogueTypeIcons[catalogue.type as keyof typeof catalogueTypeIcons] || <Image className="h-4 w-4 text-white" />}
+                        <div className={`p-2 rounded-lg bg-gradient-to-br ${catalogue.type ? (catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'from-gray-400 to-gray-600') : 'from-gray-400 to-gray-600'}`}>
+                            {catalogue.type ? (catalogueTypeIcons[catalogue.type as keyof typeof catalogueTypeIcons] || <Image className="h-4 w-4 text-white" />) : <Image className="h-4 w-4 text-white" />}
                         </div>
                         <Badge variant="outline" className="text-xs border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 bg-white/50 dark:bg-gray-700/50">
                             {catalogue.tag?.name || t('untagged')}
@@ -60,32 +113,50 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
 
                     {/* Media Preview */}
                     <div className="mb-3 relative">
-                        {catalogue.url
+                        {hasUrl
                             ? (
-                                    (IMAGE_EXT_RE.test(catalogue.url))
+                                    isImage
                                         ? (
                                                 <div
                                                     className="cursor-pointer hover:opacity-80 transition-opacity"
                                                     onClick={handleMediaClick}
                                                 >
                                                     <img
-                                                        src={catalogue.url}
+                                                        src={catalogue.url || undefined}
                                                         alt={catalogue.tag?.name || 'Catalogue image'}
                                                         className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
                                                     />
                                                 </div>
                                             )
-                                        : (VIDEO_EXT_RE.test(catalogue.url))
+                                        : isVideo
+                                            ? (
+                                                    <div
+                                                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                                                        onClick={handleMediaClick}
+                                                    >
+                                                        <video
+                                                            src={catalogue.url || undefined}
+                                                            controls
+                                                            className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600 bg-black"
+                                                        />
+                                                    </div>
+                                                )
+                                            : isEmbed
                                                 ? (
                                                         <div
-                                                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                                                            className="cursor-pointer hover:opacity-80 transition-opacity w-full h-32 relative"
                                                             onClick={handleMediaClick}
                                                         >
-                                                            <video
-                                                                src={catalogue.url}
-                                                                controls
-                                                                className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600 bg-black"
+                                                            <iframe
+                                                                src={catalogue.url || undefined}
+                                                                title={catalogue.tag?.name || 'Catalogue video'}
+                                                                frameBorder="0"
+                                                                scrolling="no"
+                                                                className="w-full h-full rounded-lg border border-gray-200 dark:border-gray-600 pointer-events-none bg-black"
                                                             />
+                                                            <div className="absolute inset-0 flex items-center justify-center bg-black/10 hover:bg-black/30 transition-colors rounded-lg">
+                                                                <Play className="h-10 w-10 text-white drop-shadow-md" />
+                                                            </div>
                                                         </div>
                                                     )
                                                 : (
@@ -113,13 +184,13 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
                             {t('created-at')}
                             :
                             {' '}
-                            {new Date(catalogue.createdAt).toLocaleString()}
+                            {catalogue.createdAt ? new Date(catalogue.createdAt).toLocaleString() : '-'}
                         </div>
                         <div>
                             {t('updated-at')}
                             :
                             {' '}
-                            {new Date(catalogue.updatedAt).toLocaleString()}
+                            {catalogue.updatedAt ? new Date(catalogue.updatedAt).toLocaleString() : '-'}
                         </div>
                     </div>
 
@@ -141,7 +212,7 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
                 </div>
 
                 {/* Bottom Gradient Border */}
-                <div className={`h-1 bg-gradient-to-r ${catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'from-gray-400 to-gray-600'} rounded-b-xl`} />
+                <div className={`h-1 bg-gradient-to-r ${catalogue.type ? (catalogueTypeGradients[catalogue.type as keyof typeof catalogueTypeGradients] || 'from-gray-400 to-gray-600') : 'from-gray-400 to-gray-600'} rounded-b-xl`} />
             </motion.div>
 
             {/* Media Preview Modal */}
@@ -152,22 +223,34 @@ const CatalogueCard: React.FC<I_CatalogueCardProps> = ({ catalogue, onEdit, onDe
                             {catalogue.tag?.name || t('untagged')}
                         </DialogTitle>
                     </DialogHeader>
-                    <div className="flex flex-col gap-4 justify-center items-center">
-                        {/* Show image if url ends with image extension */}
-                        {catalogue.url && IMAGE_EXT_RE.test(catalogue.url) && (
+                    <div className="flex flex-col gap-4 justify-center items-center w-full">
+                        {/* Show image if url is image */}
+                        {catalogue.url && isImage && (
                             <img
                                 src={catalogue.url}
                                 alt={catalogue.tag?.name || 'Catalogue image'}
                                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
                             />
                         )}
-                        {/* Show video if url ends with video extension */}
-                        {catalogue.url && VIDEO_EXT_RE.test(catalogue.url) && (
+                        {/* Show video if url is video */}
+                        {catalogue.url && isVideo && (
                             <video
                                 src={catalogue.url}
                                 controls
                                 autoPlay
                                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                            />
+                        )}
+                        {/* Show iframe if url is embed stream */}
+                        {catalogue.url && isEmbed && (
+                            <iframe
+                                src={catalogue.url}
+                                title={catalogue.tag?.name || 'Catalogue video'}
+                                frameBorder="0"
+                                allowFullScreen
+                                sandbox="allow-forms allow-scripts allow-pointer-lock allow-same-origin allow-top-navigation"
+                                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                                className="w-full aspect-video max-h-[70vh] rounded-lg"
                             />
                         )}
                         {/* Fallback if no media */}

@@ -1,6 +1,6 @@
 import { FileText } from 'lucide-react';
 import { motion } from 'motion/react';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { E_SocialPlatform, Input_CreateBlog, Input_UpdateBlog, T_Blog } from '#shared/graphql';
 
@@ -9,15 +9,20 @@ import { E_BlogCategory, E_BlogType } from '#shared/graphql';
 import { useTranslate } from '#shared/i18n';
 import { usePortal } from '#shared/portal';
 
-import { getBlogFormText, getBlogText } from './blog-text';
+import { BlogForm } from './blog-form';
 import { useCreateBlog, useDeleteBlog, useGetBlogLazy, useGetBlogs, useUpdateBlog } from './blog.hook';
 import { BlogList } from './blog.list';
 
-const BlogForm = lazy(() => import('./blog-form').then(module => ({ default: module.BlogForm })));
 
-interface I_BlogFormApi {
-    open: (blog?: T_Blog) => void;
-    close: () => void;
+function getTitleString(title: unknown): string {
+    if (typeof title === "string") return title;
+    if (title && typeof title === "object") {
+        const obj = title as Record<string, string>;
+        const keys = Object.keys(obj);
+        if (keys.length === 0) return "";
+        return obj["en"] || obj[keys[0]] || "";
+    }
+    return "";
 }
 
 export default function BlogPage() {
@@ -33,10 +38,7 @@ export default function BlogPage() {
     const [selectedType, setSelectedType] = useState<'ALL' | E_BlogType>('ALL');
     const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
     const [blogToDelete, setBlogToDelete] = useState<T_Blog | null>(null);
-    const [blogFormApi, setBlogFormApi] = useState<I_BlogFormApi | null>(null);
-    const [shouldRenderBlogForm, setShouldRenderBlogForm] = useState(false);
-    const [pendingFormBlog, setPendingFormBlog] = useState<T_Blog | undefined>();
-    const [formOpenVersion, setFormOpenVersion] = useState(0);
+    const blogFormRef = useRef<any>(null);
 
     useEffect(() => {
         setHeader({
@@ -68,18 +70,19 @@ export default function BlogPage() {
         page: isSearching ? 1 : page,
         limit: isSearching ? 1000 : pageSize,
         sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
+        populate: ['author'],
     }), [page, pageSize, sortField, sortOrder, isSearching]);
 
-    const { blogs: rawBlogs, loading, error, refetch, totalDocs: rawTotalDocs } = useGetBlogs(filter, options);
+    const { blogs: rawBlogs, loading: blogsLoading, refetch, totalDocs: rawTotalDocs, hasNextPage, hasPrevPage, totalPages } = useGetBlogs(filter, options);
 
     const filteredBlogs = useMemo(() => {
         if (!isSearching)
             return rawBlogs;
         const searchTerm = search.toLowerCase().trim();
         return rawBlogs.filter((blog: T_Blog) =>
-            getBlogText(blog?.title).toLowerCase().includes(searchTerm)
-            || getBlogText(blog?.authorName).toLowerCase().includes(searchTerm)
-            || getBlogText(blog?.hostName).toLowerCase().includes(searchTerm),
+            getTitleString(blog?.title)?.toLowerCase().includes(searchTerm)
+            || blog?.authorName?.toLowerCase().includes(searchTerm)
+            || blog?.hostName?.toLowerCase().includes(searchTerm),
         );
     }, [rawBlogs, search, isSearching]);
 
@@ -96,17 +99,8 @@ export default function BlogPage() {
     const { updateBlog, loading: updatingBlog } = useUpdateBlog();
     const { deleteBlog } = useDeleteBlog();
 
-    useEffect(() => {
-        if (!shouldRenderBlogForm || !blogFormApi)
-            return;
-
-        blogFormApi.open(pendingFormBlog);
-    }, [blogFormApi, formOpenVersion, pendingFormBlog, shouldRenderBlogForm]);
-
     const _handleCreateBlog = useCallback(() => {
-        setPendingFormBlog(undefined);
-        setShouldRenderBlogForm(true);
-        setFormOpenVersion(version => version + 1);
+        blogFormRef.current?.open();
     }, []);
 
     const _handleEditBlog = useCallback(async (blog: T_Blog) => {
@@ -114,15 +108,17 @@ export default function BlogPage() {
         try {
             const { data } = await getBlog({ id: blog.id });
             const fullBlog = data?.getBlog?.result;
-            setPendingFormBlog(fullBlog || blog);
-            setShouldRenderBlogForm(true);
-            setFormOpenVersion(version => version + 1);
+            if (fullBlog) {
+                blogFormRef.current?.open(fullBlog);
+            }
+            else {
+                // Fallback to the list data if fetch fails
+                blogFormRef.current?.open(blog);
+            }
         }
         catch (error) {
             console.error('Failed to fetch blog details:', error);
-            setPendingFormBlog(blog);
-            setShouldRenderBlogForm(true);
-            setFormOpenVersion(version => version + 1);
+            blogFormRef.current?.open(blog);
         }
     }, [getBlog]);
 
@@ -153,21 +149,21 @@ export default function BlogPage() {
             ...data,
             category: data.category ?? E_BlogCategory.TRAVELS,
             type: data.type ?? E_BlogType.BLOG,
-            title: getBlogFormText(data.title),
-            authorName: getBlogFormText(data.authorName),
-            websiteName: getBlogFormText(data.websiteName),
-            websiteURL: getBlogFormText(data.websiteURL),
-            hostName: getBlogFormText(data.hostName),
-            content: getBlogText(data.content),
-            contentHeadline: getBlogFormText(data.contentHeadline),
-            contentSubHeadline: getBlogFormText(data.contentSubHeadline),
-            featuredImage: getBlogFormText(data.featuredImage),
-            logo: getBlogFormText(data.logo),
-            cover: getBlogFormText(data.cover),
-            file: getBlogFormText(data.file),
+            title: data.title ?? '',
+            authorName: data.authorName ?? '',
+            websiteName: data.websiteName ?? '',
+            websiteURL: data.websiteURL ?? '',
+            hostName: data.hostName ?? '',
+            content: data.content ?? '',
+            contentHeadline: data.contentHeadline ?? '',
+            contentSubHeadline: data.contentSubHeadline ?? '',
+            featuredImage: data.featuredImage ?? '',
+            logo: data.logo ?? '',
+            cover: data.cover ?? '',
+            file: data.file ?? '',
             socialLinks: Array.isArray(data.socialLinks)
                 ? data.socialLinks.filter(l => l && l.type && l.url)
-                        .map(l => ({ type: l!.type as E_SocialPlatform, url: getBlogFormText(l!.url) }))
+                        .map(l => ({ type: l!.type as E_SocialPlatform, url: l!.url || '' }))
                 : [],
         };
         await createBlog(safeData);
@@ -179,21 +175,21 @@ export default function BlogPage() {
             ...data,
             category: data.category ?? E_BlogCategory.TRAVELS,
             type: data.type ?? E_BlogType.BLOG,
-            title: getBlogFormText(data.title),
-            authorName: getBlogFormText(data.authorName),
-            websiteName: getBlogFormText(data.websiteName),
-            websiteURL: getBlogFormText(data.websiteURL),
-            hostName: getBlogFormText(data.hostName),
-            content: getBlogText(data.content),
-            contentHeadline: getBlogFormText(data.contentHeadline),
-            contentSubHeadline: getBlogFormText(data.contentSubHeadline),
-            featuredImage: getBlogFormText(data.featuredImage),
-            logo: getBlogFormText(data.logo),
-            cover: getBlogFormText(data.cover),
-            file: getBlogFormText(data.file),
+            title: data.title ?? '',
+            authorName: data.authorName ?? '',
+            websiteName: data.websiteName ?? '',
+            websiteURL: data.websiteURL ?? '',
+            hostName: data.hostName ?? '',
+            content: data.content ?? '',
+            contentHeadline: data.contentHeadline ?? '',
+            contentSubHeadline: data.contentSubHeadline ?? '',
+            featuredImage: data.featuredImage ?? '',
+            logo: data.logo ?? '',
+            cover: data.cover ?? '',
+            file: data.file ?? '',
             socialLinks: Array.isArray(data.socialLinks)
                 ? data.socialLinks.filter(l => l && l.type && l.url)
-                        .map(l => ({ type: l!.type as E_SocialPlatform, url: getBlogFormText(l!.url) }))
+                        .map(l => ({ type: l!.type as E_SocialPlatform, url: l!.url || '' }))
                 : [],
         };
         await updateBlog({ id }, safeData);
@@ -234,10 +230,7 @@ export default function BlogPage() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 p-6">
                 <BlogList
-                    error={error}
-                    onRetry={() => refetch?.()}
                     blogs={blogs}
-                    loading={loading}
                     onEditBlog={_handleEditBlog}
                     onCreateBlog={_handleCreateBlog}
                     onDeleteBlog={_handleDeleteBlog}
@@ -262,19 +255,19 @@ export default function BlogPage() {
                         setSelectedType(v as any);
                         setPage(1);
                     }}
+                    loading={blogsLoading}
+                    hasNextPage={hasNextPage}
+                    hasPrevPage={hasPrevPage}
+                    totalPages={totalPages}
                 />
-                {shouldRenderBlogForm && (
-                    <Suspense fallback={null}>
-                        <BlogForm
-                            ref={setBlogFormApi}
-                            onCreateSubmit={_handleCreateSubmit}
-                            onUpdateSubmit={_handleUpdateSubmit}
-                            creating={creatingBlog}
-                            updating={updatingBlog}
-                            fetching={fetchingBlog}
-                        />
-                    </Suspense>
-                )}
+                <BlogForm
+                    ref={blogFormRef}
+                    onCreateSubmit={_handleCreateSubmit}
+                    onUpdateSubmit={_handleUpdateSubmit}
+                    creating={creatingBlog}
+                    updating={updatingBlog}
+                    fetching={fetchingBlog}
+                />
                 <ConfirmDialog
                     open={!!blogToDelete}
                     title={t('delete-blog')}

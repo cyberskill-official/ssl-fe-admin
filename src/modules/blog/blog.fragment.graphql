@@ -20,7 +20,6 @@ fragment F_Blog on T_Blog {
     featuredImage
     contentHeadline
     contentSubHeadline
-    content
     relatedBlogsIds
     relatedBlogs {
         ...F_RelatedBlog
@@ -43,7 +42,7 @@ fragment F_Blog on T_Blog {
     }
     authorId
     author {
-        ...F_User
+        ...F_UserInfo
     }
     seo {
         ...F_Seo

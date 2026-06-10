@@ -5,6 +5,8 @@ import { Badge, Button, Switch } from '#shared/component';
 
 import type { I_DestinationCardProps } from './destination.type';
 
+import { getDestinationText } from './destination-text';
+
 export function DestinationCard({
     destination,
     onEdit,
@@ -17,6 +19,8 @@ export function DestinationCard({
     const rating = destination.rating || 'SILVER';
     const type = destination.type || 'CLUB';
     const ageGroup = destination.ageGroup;
+    const destinationName = getDestinationText(destination.name, 'Destination');
+    const cityName = getDestinationText(destination.location?.city?.name);
 
     const _getRatingColor = (rating: string) => {
         switch (rating) {
@@ -64,7 +68,7 @@ export function DestinationCard({
                     ? (
                             <img
                                 src={destination.logo}
-                                alt={destination.name || 'Destination'}
+                                alt={destinationName}
                                 className="w-full h-full object-cover"
                             />
                         )
@@ -107,14 +111,14 @@ export function DestinationCard({
 
                 {/* Destination Name */}
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 text-sm leading-tight line-clamp-2">
-                    {destination.name}
+                    {destinationName}
                 </h3>
 
                 {/* Location */}
                 <div className="flex items-center gap-2 mb-3 text-xs text-gray-600 dark:text-gray-300">
                     <MapPin className="w-3 h-3" />
                     <span className="line-clamp-1">
-                        {destination.location?.city?.name || destination.location?.address || t('location-not-specified')}
+                        {cityName || destination.location?.address || t('location-not-specified')}
                     </span>
                 </div>
 

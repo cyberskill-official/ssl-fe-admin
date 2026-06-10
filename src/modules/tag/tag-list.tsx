@@ -495,7 +495,7 @@ export function TagList({
                     )}
 
             {/* Shared Pagination for both Grid and Table views */}
-            {totalDocs > pageSize && (
+            {totalDocs > 0 && (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

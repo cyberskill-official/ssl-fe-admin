@@ -1,3 +1,4 @@
+/* eslint-disable react-dom/no-unsafe-iframe-sandbox */
 import type { ColumnDef } from '@tanstack/react-table';
 
 import {
@@ -26,8 +27,67 @@ import { useGetTags } from '../tag/tag.hook';
 import { CatalogueCard } from './catalogue-card';
 
 const UNDERSCORE_RE = /_/g;
-const IMAGE_FILE_RE = /\.(?:jpg|jpeg|png|gif|webp)$/i;
-const VIDEO_FILE_RE = /\.(?:mp4|webm|ogg)$/i;
+const WORD_BOUNDARY_RE = /\b\w/g;
+
+function getTagTypeFallback(type?: string | null) {
+    return type
+        ? type.toLowerCase().replace(UNDERSCORE_RE, ' ').replace(WORD_BOUNDARY_RE, char => char.toUpperCase())
+        : '';
+}
+
+function getSafeTranslation(value: unknown, fallback: string) {
+    return typeof value === 'string' && value !== '[object Object]' ? value : fallback;
+}
+
+function isEmbedUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const u = url.toLowerCase();
+    return (
+        u.includes('iframe.mediadelivery.net')
+        || u.includes('mediadelivery.net')
+        || u.includes('youtube.com')
+        || u.includes('youtu.be')
+        || u.includes('vimeo.com')
+        || u.includes('/embed/')
+    );
+}
+
+function getMediaExtension(urlStr?: string | null) {
+    if (!urlStr)
+        return '';
+    try {
+        const url = new URL(urlStr);
+        const pathname = url.pathname;
+        const filename = pathname.split('/').pop() || '';
+        const lastDot = filename.lastIndexOf('.');
+        if (lastDot === -1)
+            return '';
+        return filename.slice(lastDot + 1).toLowerCase();
+    }
+    catch {
+        const cleanUrl = (urlStr.split('?')[0] ?? '').split('#')[0] ?? '';
+        const filename = cleanUrl.split('/').pop() ?? '';
+        const lastDot = filename.lastIndexOf('.');
+        if (lastDot === -1)
+            return '';
+        return filename.slice(lastDot + 1).toLowerCase();
+    }
+}
+
+function isImageUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const ext = getMediaExtension(url);
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(ext);
+}
+
+function isVideoUrl(url?: string | null) {
+    if (!url)
+        return false;
+    const ext = getMediaExtension(url);
+    return ['mp4', 'avi', 'mov', 'wmv', 'webm', 'ogg', 'mkv', '3gp'].includes(ext);
+}
 
 const catalogueTypeIcons = {
     BOOTYCALL: <Image className="h-4 w-4" />,
@@ -58,6 +118,7 @@ export function CatalogueList({
     onTypeChange,
 }: I_CatalogueListProps) {
     const { t } = useTranslate('catalogue');
+    const { t: tTag } = useTranslate('tag');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [selectedMedia, setSelectedMedia] = useState<T_Catalogue | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,7 +136,7 @@ export function CatalogueList({
         { value: 'ALL', label: t('all-tags') },
         ...tags.map(tag => ({
             value: tag.id || '',
-            label: tag.name,
+            label: tag.name ?? '',
         })),
     ];
 
@@ -89,11 +150,11 @@ export function CatalogueList({
             accessorKey: 'type',
             header: t('type'),
             cell: ({ row }) => {
-                const type = row.getValue('type') as E_CatalogueType;
+                const type = row.getValue('type') as E_CatalogueType | null;
                 return (
                     <div className="flex items-center gap-2">
-                        <div className={`p-1 rounded bg-gradient-to-br ${catalogueTypeGradients[type] || 'from-gray-400 to-gray-600'}`}>
-                            {catalogueTypeIcons[type] || <Image className="h-3 w-3 text-white" />}
+                        <div className={`p-1 rounded bg-gradient-to-br ${type ? (catalogueTypeGradients[type] || 'from-gray-400 to-gray-600') : 'from-gray-400 to-gray-600'}`}>
+                            {type ? (catalogueTypeIcons[type] || <Image className="h-3 w-3 text-white" />) : <Image className="h-3 w-3 text-white" />}
                         </div>
                         <span className="text-sm font-medium">{t(type?.toLowerCase() || 'unknown')}</span>
                     </div>
@@ -105,12 +166,15 @@ export function CatalogueList({
             header: t('tag'),
             cell: ({ row }) => {
                 const tag = row.original.tag;
+                const typeKey = tag?.type?.toLowerCase().replace(UNDERSCORE_RE, '-');
+                const translatedType = typeKey ? tTag(typeKey) : undefined;
+                const typeLabel = getSafeTranslation(translatedType, getTagTypeFallback(tag?.type));
                 return (
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{tag?.name ?? 'Untagged'}</span>
-                        {tag?.type && (
+                        {typeLabel && (
                             <Badge variant="outline" className="text-xs">
-                                {t(tag.type.toLowerCase().replace(UNDERSCORE_RE, '-'))}
+                                {typeLabel}
                             </Badge>
                         )}
                     </div>
@@ -145,11 +209,19 @@ export function CatalogueList({
                             />
                         )}
                         {catalogue.type === E_CatalogueType.PARTY && (
-                            <video
-                                src={url}
-                                className="w-16 h-12 object-cover rounded border"
-                                controls
-                            />
+                            isEmbedUrl(url)
+                                ? (
+                                        <div className="w-16 h-12 bg-purple-100 dark:bg-purple-800 rounded border flex items-center justify-center">
+                                            <Video className="h-6 w-6 text-purple-500" />
+                                        </div>
+                                    )
+                                : (
+                                        <video
+                                            src={url}
+                                            className="w-16 h-12 object-cover rounded border"
+                                            controls
+                                        />
+                                    )
                         )}
                         {catalogue.type === E_CatalogueType.TRAVEL && (
                             <div className="w-16 h-12 bg-blue-100 dark:bg-blue-800 rounded border flex items-center justify-center">
@@ -164,16 +236,16 @@ export function CatalogueList({
             accessorKey: 'createdAt',
             header: t('created-at'),
             cell: ({ row }) => {
-                const date = new Date(row.getValue('createdAt'));
-                return <span className="text-sm text-gray-600 dark:text-gray-400">{date.toLocaleString()}</span>;
+                const val = row.getValue('createdAt');
+                return <span className="text-sm text-gray-600 dark:text-gray-400">{val ? new Date(val as string).toLocaleString() : '-'}</span>;
             },
         },
         {
             accessorKey: 'updatedAt',
             header: t('updated-at'),
             cell: ({ row }) => {
-                const date = new Date(row.getValue('updatedAt'));
-                return <span className="text-sm text-gray-600 dark:text-gray-400">{date.toLocaleString()}</span>;
+                const val = row.getValue('updatedAt');
+                return <span className="text-sm text-gray-600 dark:text-gray-400">{val ? new Date(val as string).toLocaleString() : '-'}</span>;
             },
         },
         {
@@ -289,7 +361,7 @@ export function CatalogueList({
                                                         catalogue={catalogue}
                                                         onEdit={onEditCatalogue}
                                                         onDelete={onDeleteCatalogue}
-                                                        t={t}
+                                                        t={t as (key: string, params?: Record<string, unknown>) => string}
                                                     />
                                                 </motion.div>
                                             ))}
@@ -308,6 +380,8 @@ export function CatalogueList({
                                 <DataTable
                                     columns={columns}
                                     data={filteredCatalogues}
+                                    showPagination={false}
+                                    showToolbar={false}
                                 />
                             )}
                 {/* Pagination */}
@@ -373,22 +447,34 @@ export function CatalogueList({
                             {selectedMedia?.tag?.name ?? t('untagged')}
                         </DialogTitle>
                     </DialogHeader>
-                    <div className="flex flex-col gap-4 justify-center items-center">
-                        {/* Show image if url ends with image extension */}
-                        {selectedMedia?.url && IMAGE_FILE_RE.test(selectedMedia.url) && (
+                    <div className="flex flex-col gap-4 justify-center items-center w-full">
+                        {/* Show image if url is image */}
+                        {selectedMedia?.url && isImageUrl(selectedMedia.url) && (
                             <img
                                 src={selectedMedia.url}
                                 alt={selectedMedia.tag?.name || 'Catalogue image'}
                                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
                             />
                         )}
-                        {/* Show video if url ends with video extension */}
-                        {selectedMedia?.url && VIDEO_FILE_RE.test(selectedMedia.url) && (
+                        {/* Show video if url is video */}
+                        {selectedMedia?.url && isVideoUrl(selectedMedia.url) && (
                             <video
                                 src={selectedMedia.url}
                                 controls
                                 autoPlay
                                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                            />
+                        )}
+                        {/* Show iframe if url is embed stream */}
+                        {selectedMedia?.url && isEmbedUrl(selectedMedia.url) && (
+                            <iframe
+                                src={selectedMedia.url}
+                                title={selectedMedia.tag?.name || 'Catalogue video'}
+                                frameBorder="0"
+                                allowFullScreen
+                                sandbox="allow-forms allow-scripts allow-pointer-lock allow-same-origin allow-top-navigation"
+                                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                                className="w-full aspect-video max-h-[70vh] rounded-lg"
                             />
                         )}
                         {/* Fallback if no media */}

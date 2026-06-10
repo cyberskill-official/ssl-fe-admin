@@ -1,3 +1,5 @@
+import type { FieldPath } from 'react-hook-form';
+
 import { useLazyQuery } from '@cyberskill/shared/react/apollo-client';
 import {
     Building,
@@ -27,7 +29,7 @@ import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'r
 import { useDropzone } from 'react-dropzone';
 import { Controller, useForm } from 'react-hook-form';
 
-import type { Input_CreateDestination, Input_UpdateDestination, T_Destination } from '#shared/graphql';
+import type { Input_CreateDestination, Input_UpdateDestination, T_City, T_Destination } from '#shared/graphql';
 
 import { useGetCountries } from '#modules/location';
 import { useGetCities } from '#modules/location/city/city.hook';
@@ -45,7 +47,22 @@ import { cn } from '#shared/util';
 
 import type { I_DestinationFormData, I_DestinationFormProps, I_DestinationFormRef, T_Hotel } from './destination.type';
 
+import { getDestinationText } from './destination-text';
 import { useGetDestination } from './destination.hook';
+
+interface I_MapTilerFeature {
+    place_type?: string[];
+    place_name?: string;
+    text?: string;
+}
+
+function getFormText(value: unknown) {
+    return getDestinationText(value).trim();
+}
+
+function getOptionText(value: unknown, fallback = '') {
+    return getDestinationText(value, fallback).trim();
+}
 
 const FORM_DEFAULT_VALUES: I_DestinationFormData = {
     type: E_DestinationType.CLUB,
@@ -104,7 +121,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
     const [socialShareImage, setSocialShareImage] = useState<string | null>(null);
     const [showMapPicker, setShowMapPicker] = useState(false);
     const [showHotelMapPicker, setShowHotelMapPicker] = useState<number | null>(null);
-    const [hotelCitiesCache, setHotelCitiesCache] = useState<Record<string, any[]>>({});
+    const [hotelCitiesCache, setHotelCitiesCache] = useState<Record<string, T_City[]>>({});
     const [shouldRefetchCities, setShouldRefetchCities] = useState(false);
     const [refreshingDestination, setRefreshingDestination] = useState(false);
 
@@ -234,7 +251,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
             reset({
                 ...FORM_DEFAULT_VALUES,
                 type,
-                name: destinationToUse.name ?? '',
+                name: getDestinationText(destinationToUse.name),
                 websiteURL: destinationToUse.websiteURL ?? '',
                 rating: destinationToUse.rating ?? undefined,
                 location: {
@@ -253,7 +270,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 ageGroup: destinationToUse.ageGroup ?? undefined,
                 logo: destinationToUse.logo ?? '',
                 nearbyHotels: (destinationToUse.nearbyHotels ?? []).map(hotel => ({
-                    name: hotel?.name ?? '',
+                    name: getDestinationText(hotel?.name),
                     location: {
                         address: hotel?.location?.address ?? '',
                         countryId: hotel?.location?.countryId ?? hotel?.locationId ?? '',
@@ -522,7 +539,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
             if (geo?.features && geo.features.length > 0) {
                 let bestAddress = '';
 
-                const addressFeature = geo.features.find((feature: any) =>
+                const addressFeature = geo.features.find((feature: I_MapTilerFeature) =>
                     feature.place_type?.includes('address')
                     || feature.place_type?.includes('poi')
                     || feature.place_type?.includes('postcode'),
@@ -533,7 +550,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 }
 
                 if (!bestAddress) {
-                    const detailedFeature = geo.features.reduce((prev: any, curr: any) => {
+                    const detailedFeature = geo.features.reduce((prev: I_MapTilerFeature, curr: I_MapTilerFeature) => {
                         const prevLength = prev?.place_name?.length || 0;
                         const currLength = curr?.place_name?.length || 0;
                         return currLength > prevLength ? curr : prev;
@@ -546,21 +563,21 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 }
 
                 setValue('location.address', bestAddress);
-                const countryFeature = geo.features.find((feature: any) =>
+                const countryFeature = geo.features.find((feature: I_MapTilerFeature) =>
                     feature.place_type?.includes('country'),
                 );
 
                 if (countryFeature) {
                     const countryName = countryFeature.text;
                     const foundCountry = countries?.find(c =>
-                        c.name?.toLowerCase() === countryName.toLowerCase(),
+                        getOptionText(c.name).toLowerCase() === countryName.toLowerCase(),
                     );
 
                     if (foundCountry) {
                         setValue('location.countryId', foundCountry.id);
 
                         setShouldRefetchCities(true);
-                        const cityFeature = geo.features.find((feature: any) =>
+                        const cityFeature = geo.features.find((feature: I_MapTilerFeature) =>
                             feature.place_type?.includes('place') || feature.place_type?.includes('locality'),
                         );
 
@@ -568,7 +585,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                             const cityName = cityFeature.text;
                             setTimeout(() => {
                                 const foundCity = cities?.find(c =>
-                                    c.countryId === foundCountry.id && c.name?.toLowerCase() === cityName.toLowerCase(),
+                                    c.countryId === foundCountry.id && getOptionText(c.name).toLowerCase() === cityName.toLowerCase(),
                                 );
                                 if (foundCity) {
                                     setValue('location.cityId', foundCity.id);
@@ -605,7 +622,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
             if (geo?.features && geo.features.length > 0) {
                 let bestAddress = '';
 
-                const addressFeature = geo.features.find((feature: any) =>
+                const addressFeature = geo.features.find((feature: I_MapTilerFeature) =>
                     feature.place_type?.includes('address')
                     || feature.place_type?.includes('poi')
                     || feature.place_type?.includes('postcode'),
@@ -616,7 +633,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 }
 
                 if (!bestAddress) {
-                    const detailedFeature = geo.features.reduce((prev: any, curr: any) => {
+                    const detailedFeature = geo.features.reduce((prev: I_MapTilerFeature, curr: I_MapTilerFeature) => {
                         const prevLength = prev?.place_name?.length || 0;
                         const currLength = curr?.place_name?.length || 0;
                         return currLength > prevLength ? curr : prev;
@@ -629,27 +646,27 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 }
 
                 setValue(`nearbyHotels.${hotelIndex}.location.address`, bestAddress);
-                const countryFeature = geo.features.find((feature: any) =>
+                const countryFeature = geo.features.find((feature: I_MapTilerFeature) =>
                     feature.place_type?.includes('country'),
                 );
 
                 if (countryFeature) {
                     const countryName = countryFeature.text;
                     const foundCountry = countries?.find(c =>
-                        c.name?.toLowerCase() === countryName.toLowerCase(),
+                        getOptionText(c.name).toLowerCase() === countryName.toLowerCase(),
                     );
 
                     if (foundCountry) {
                         setValue(`nearbyHotels.${hotelIndex}.location.countryId`, foundCountry.id);
-                        const cityFeature = geo.features.find((feature: any) =>
+                        const cityFeature = geo.features.find((feature: I_MapTilerFeature) =>
                             feature.place_type?.includes('place') || feature.place_type?.includes('locality'),
                         );
 
                         if (cityFeature) {
                             const cityName = cityFeature.text;
                             const hotelCities = hotelCitiesCache[foundCountry.id] || [];
-                            const foundCity = hotelCities.find((c: any) =>
-                                c.name?.toLowerCase() === cityName.toLowerCase(),
+                            const foundCity = hotelCities.find(c =>
+                                getOptionText(c.name).toLowerCase() === cityName.toLowerCase(),
                             );
 
                             if (foundCity) {
@@ -726,11 +743,19 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
         const { location, nearbyHotels, ...rest } = data;
         const submitData = {
             ...rest,
+            name: getFormText(data.name),
+            websiteURL: getFormText(data.websiteURL),
+            introductionHeadline: getFormText(data.introductionHeadline),
+            introductionContent: getFormText(data.introductionContent),
+            wearImage: getFormText(data.wearImage),
+            womenDressCode: getFormText(data.womenDressCode),
+            menDressCode: getFormText(data.menDressCode),
+            logo: getFormText(data.logo),
             location: location?.map?.latitude && location?.map?.longitude
                 ? {
                         countryId: location?.countryId || '',
                         cityId: location?.cityId || '',
-                        address: location?.address || '',
+                        address: getFormText(location?.address),
                         map: {
                             latitude: location.map.latitude,
                             longitude: location.map.longitude,
@@ -739,14 +764,14 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 : {
                         countryId: location?.countryId || '',
                         cityId: location?.cityId || '',
-                        address: location?.address || '',
+                        address: getFormText(location?.address),
                     },
-            nearbyHotels: nearbyHotels.map(hotel => ({
-                name: hotel.name,
-                location: hotel.location?.map?.latitude && hotel.location?.map?.longitude
+            nearbyHotels: (nearbyHotels || []).map(hotel => ({
+                name: getFormText(hotel?.name),
+                location: hotel?.location?.map?.latitude && hotel?.location?.map?.longitude
                     ? {
-                            address: hotel.location.address,
-                            countryId: hotel.location.countryId,
+                            address: getFormText(hotel.location.address),
+                            countryId: hotel.location.countryId || '',
                             cityId: hotel.location.cityId || '',
                             map: {
                                 latitude: hotel.location.map.latitude,
@@ -754,19 +779,18 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                             },
                         }
                     : {
-                            address: hotel.location.address,
-                            countryId: hotel.location.countryId,
-                            cityId: hotel.location.cityId || '',
+                            address: getFormText(hotel?.location?.address),
+                            countryId: hotel?.location?.countryId || '',
+                            cityId: hotel?.location?.cityId || '',
                         },
-                url: hotel.url,
-                description: hotel.description,
-                image: hotel.image,
+                url: getFormText(hotel?.url),
+                description: getFormText(hotel?.description),
+                image: getFormText(hotel?.image),
             })),
-            logo: data.logo || '',
-            images: data.images,
+            images: (data.images || []).map(image => getFormText(image)).filter(Boolean),
             seo: {
                 ...data.seo,
-                socialImage: socialShareImage || '',
+                socialImage: getFormText(socialShareImage),
             },
         };
 
@@ -956,7 +980,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                             ?.filter(country => country !== null && country !== undefined)
                                                             ?.map(country => ({
                                                                 id: country.id!,
-                                                                name: country.name!,
+                                                                name: getOptionText(country.name, 'Unknown Country'),
                                                             })) || []}
                                                         value={field.value ?? ''}
                                                         onChange={(value) => {
@@ -984,7 +1008,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                 ?.filter(city => city !== null && city !== undefined)
                                                                 ?.map(city => ({
                                                                     id: city.id!,
-                                                                    name: city.name!,
+                                                                    name: getOptionText(city.name, 'Unknown City'),
                                                                 })) || []}
                                                             value={field.value ?? ''}
                                                             onChange={(value) => {
@@ -1140,12 +1164,12 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 {watch('location.countryId') && (
                                                     <Badge variant="outline" className="text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-600">
-                                                        {countries?.find(c => c.id === watch('location.countryId'))?.name || 'Unknown Country'}
+                                                        {getDestinationText(countries?.find(c => c.id === watch('location.countryId'))?.name, 'Unknown Country')}
                                                     </Badge>
                                                 )}
                                                 {watch('location.cityId') && (
                                                     <Badge variant="outline" className="text-green-600 border-green-300 dark:text-green-400 dark:border-green-600">
-                                                        {cities?.find(c => c.id === watch('location.cityId'))?.name || 'Unknown City'}
+                                                        {getDestinationText(cities?.find(c => c.id === watch('location.cityId'))?.name, 'Unknown City')}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -1154,7 +1178,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                             <Controller
                                                 name="websiteURL"
                                                 control={control}
-                                                rules={{ required: t('error-enter-website-url') }}
+                                                rules={{ required: t('error-enter-website-url'), validate: (v) => { if (!v) return true; try { new URL((v || '').trim()); return true; } catch { return t('error-invalid-url'); } } }}
                                                 render={({ field }) => (
                                                     <div className="relative">
                                                         <Input
@@ -1631,7 +1655,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                             className="border border-gray-300 dark:border-gray-600 rounded-lg"
                                                             contentClassName="min-h-[120px] outline-none p-3 text-gray-900 dark:text-gray-100 text-sm"
                                                         />
-                                                        <input type="hidden" {...register(`${key}.reason` as any)} />
+                                                        <input type="hidden" {...register(`${key}.reason` as FieldPath<I_DestinationFormData>)} />
                                                         {errors[key]?.reason && (
                                                             <p className="text-red-500 text-xs mt-1">
                                                                 {errors[key]?.reason as string}
@@ -1828,7 +1852,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                             ?.filter(country => country !== null && country !== undefined)
                                                                             ?.map(country => ({
                                                                                 id: country.id!,
-                                                                                name: country.name!,
+                                                                                name: getOptionText(country.name, 'Unknown Country'),
                                                                             })) || []}
                                                                         value={field.value ?? ''}
                                                                         onChange={(value) => {
@@ -1854,10 +1878,10 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                         return (
                                                                             <AutocompleteSelect
                                                                                 options={hotelCities
-                                                                                    ?.filter((city: any) => city !== null && city !== undefined)
-                                                                                    ?.map((city: any) => ({
+                                                                                    ?.filter(city => city !== null && city !== undefined)
+                                                                                    ?.map(city => ({
                                                                                         id: city.id!,
-                                                                                        name: city.name!,
+                                                                                        name: getOptionText(city.name, 'Unknown City'),
                                                                                     })) || []}
                                                                                 value={field.value ?? ''}
                                                                                 onChange={value => field.onChange(value)}
@@ -2008,7 +2032,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                             )}
                                                             {watch(`nearbyHotels.${index}.location.cityId`) && (
                                                                 <Badge variant="outline" className="text-green-600 border-green-300 dark:text-green-400 dark:border-green-600">
-                                                                    {(hotelCitiesCache[watch(`nearbyHotels.${index}.location.countryId`)] || [])?.find((c: any) => c.id === watch(`nearbyHotels.${index}.location.cityId`))?.name || 'Unknown City'}
+                                                                    {(hotelCitiesCache[watch(`nearbyHotels.${index}.location.countryId`)] || [])?.find((c) => c.id === watch(`nearbyHotels.${index}.location.cityId`))?.name || 'Unknown City'}
                                                                 </Badge>
                                                             )}
                                                         </div>
@@ -2018,7 +2042,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                     <Controller
                                                         name={`nearbyHotels.${index}.url`}
                                                         control={control}
-                                                        rules={{ required: t('error-enter-website-url') }}
+                                                        rules={{ required: t('error-enter-website-url'), validate: (v) => { if (!v) return true; try { new URL((v || '').trim()); return true; } catch { return t('error-invalid-url'); } } }}
                                                         render={({ field }) => (
                                                             <div className="relative">
                                                                 <Input
@@ -2181,13 +2205,13 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                         apiKey={env.VITE_MAPTILER_KEY}
                         countries={countries?.map(country => ({
                             id: country.id!,
-                            name: country.name!,
+                            name: getOptionText(country.name, 'Unknown Country'),
                             latitude: country.latitude || undefined,
                             longitude: country.longitude || undefined,
                         })) || []}
                         cities={cities?.map(city => ({
                             id: city.id!,
-                            name: city.name!,
+                            name: getOptionText(city.name, 'Unknown City'),
                             latitude: city.latitude || undefined,
                             longitude: city.longitude || undefined,
                             countryId: city.countryId!,
@@ -2211,13 +2235,13 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                         apiKey={env.VITE_MAPTILER_KEY}
                         countries={countries?.map(country => ({
                             id: country.id!,
-                            name: country.name!,
+                            name: getOptionText(country.name, 'Unknown Country'),
                             latitude: country.latitude || undefined,
                             longitude: country.longitude || undefined,
                         })) || []}
                         cities={cities?.map(city => ({
                             id: city.id!,
-                            name: city.name!,
+                            name: getOptionText(city.name, 'Unknown City'),
                             latitude: city.latitude || undefined,
                             longitude: city.longitude || undefined,
                             countryId: city.countryId!,

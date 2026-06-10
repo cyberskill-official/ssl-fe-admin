@@ -86,7 +86,7 @@ export async function getGeolocationFromIP(ip?: string): Promise<Geolocation> {
 }
 
 // Expose to window for testing in development only
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
+if (typeof window !== 'undefined' && (import.meta as unknown as { env: { DEV?: boolean } }).env?.DEV) {
     (
         window as { getGeolocationFromIP?: typeof getGeolocationFromIP }
     ).getGeolocationFromIP = getGeolocationFromIP;

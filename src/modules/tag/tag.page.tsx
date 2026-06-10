@@ -14,6 +14,20 @@ import { TagForm } from './tag-form';
 import { TagList } from './tag-list';
 import { useCreateTag, useDeleteTag, useGetTags, useUpdateTag } from './tag.hook';
 
+const DIACRITICS_RE = /[\u0300-\u036F]/g;
+const NON_SEARCH_CHAR_RE = /[^\p{L}\p{N}]+/gu;
+const WHITESPACE_RE = /\s+/g;
+
+function normalizeTagText(value?: string | null) {
+    return (value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(DIACRITICS_RE, '')
+        .replace(NON_SEARCH_CHAR_RE, ' ')
+        .replace(WHITESPACE_RE, ' ')
+        .trim();
+}
+
 export function TagPage() {
     const { t } = useTranslate('tag');
     const { setHeader } = usePortal();
@@ -35,25 +49,24 @@ export function TagPage() {
         return () => setHeader(null);
     }, [setHeader, t]);
 
+    const shouldFetchAll = true;
+
+    const [knownTotal, setKnownTotal] = useState(1000);
+
     const filter = useMemo(() => {
         const filterObj: {
             isDel: boolean;
-            name?: string;
             type?: E_TagType;
         } = {
             isDel: false,
         };
-
-        if (search) {
-            filterObj.name = search;
-        }
 
         if (selectedType !== 'ALL') {
             filterObj.type = selectedType;
         }
 
         return filterObj;
-    }, [search, selectedType]);
+    }, [selectedType]);
 
     const options = useMemo(() => {
         const sortValue = sortOrder === 'desc' ? -1 : 1;
@@ -67,34 +80,104 @@ export function TagPage() {
         }
 
         return {
-            page,
-            limit: pageSize,
+            page: shouldFetchAll ? 1 : page,
+            limit: shouldFetchAll ? knownTotal : pageSize,
             sort: sortObj,
             populate: ['createdBy'],
         };
-    }, [page, pageSize, sortField, sortOrder]);
+    }, [shouldFetchAll, page, pageSize, knownTotal, sortField, sortOrder]);
 
     const {
         tags: rawTags,
-        totalDocs,
+        totalDocs: serverTotalDocs,
         loading,
         refetch,
     } = useGetTags(filter, options);
 
-    const tags = useMemo(() => {
-        if (!rawTags.length) {
+    useEffect(() => {
+        if (serverTotalDocs > 0) {
+            // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+            setKnownTotal(prev => Math.max(prev, serverTotalDocs));
+        }
+    }, [serverTotalDocs]);
+
+    const filteredTags = useMemo(() => {
+        if (!search) {
             return rawTags;
         }
+        const searchText = normalizeTagText(search);
+        return rawTags.filter(tag =>
+            normalizeTagText(tag.name).includes(searchText),
+        );
+    }, [rawTags, search]);
+
+    const sortedTags = useMemo(() => {
+        if (!filteredTags.length) {
+            return filteredTags;
+        }
+        const sorted = [...filteredTags];
         if (sortField === 'usageCount') {
-            return [...rawTags].sort((a, b) => {
+            return sorted.sort((a, b) => {
                 const aCount = Number(a.usageCount) || 0;
                 const bCount = Number(b.usageCount) || 0;
                 return sortOrder === 'desc' ? bCount - aCount : aCount - bCount;
             });
         }
+        if (sortField === 'name') {
+            return sorted.sort((a, b) => {
+                const aName = normalizeTagText(a.name);
+                const bName = normalizeTagText(b.name);
+                const result = sortOrder === 'desc'
+                    ? bName.localeCompare(aName, 'en', { sensitivity: 'base' })
+                    : aName.localeCompare(bName, 'en', { sensitivity: 'base' });
+                return result || String(a.id || '').localeCompare(String(b.id || ''));
+            });
+        }
+        if (sortField === 'createdAt') {
+            return sorted.sort((a, b) => {
+                const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+            });
+        }
+        if (sortField === 'type') {
+            return sorted.sort((a, b) => {
+                const aType = (a.type || '').toLowerCase();
+                const bType = (b.type || '').toLowerCase();
+                return sortOrder === 'desc'
+                    ? bType.localeCompare(aType)
+                    : aType.localeCompare(bType);
+            });
+        }
+        return sorted;
+    }, [filteredTags, sortField, sortOrder]);
 
-        return rawTags;
-    }, [rawTags, sortField, sortOrder]);
+    const paginatedData = useMemo(() => {
+        if (shouldFetchAll) {
+            const totalFiltered = sortedTags.length;
+            const totalPagesCalculated = Math.ceil(totalFiltered / pageSize);
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const paginatedTags = sortedTags.slice(startIndex, endIndex);
+
+            return {
+                tags: paginatedTags,
+                totalDocs: totalFiltered,
+                totalPages: totalPagesCalculated,
+                hasNextPage: page < totalPagesCalculated,
+                hasPrevPage: page > 1,
+            };
+        }
+        else {
+            return {
+                tags: sortedTags,
+                totalDocs: serverTotalDocs,
+                totalPages: Math.ceil(serverTotalDocs / pageSize),
+                hasNextPage: page * pageSize < serverTotalDocs,
+                hasPrevPage: page > 1,
+            };
+        }
+    }, [shouldFetchAll, sortedTags, page, pageSize, serverTotalDocs]);
 
     const { createTag, loading: creating } = useCreateTag();
     const { updateTag, loading: updating } = useUpdateTag();
@@ -174,12 +257,12 @@ export function TagPage() {
                     <TagList
                         sortField={sortField}
                         sortOrder={sortOrder}
-                        tags={tags}
+                        tags={paginatedData.tags}
                         loading={loading}
                         onEditTag={_handleEditTag}
                         onCreateTag={_handleCreateTag}
                         onDeleteTag={_handleDeleteTag}
-                        totalDocs={totalDocs}
+                        totalDocs={paginatedData.totalDocs}
                         page={page}
                         pageSize={pageSize}
                         onPageChange={_handlePageChange}

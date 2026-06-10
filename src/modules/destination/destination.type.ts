@@ -35,7 +35,7 @@ export interface I_DestinationCardProps {
     onDelete: (destination: T_Destination) => void;
     onToggleStatus: (destinationId: string, currentIsActive: boolean) => void;
     updatingStatusId?: string;
-    t: (key: string, params?: Record<string, any>) => string;
+    t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 export interface I_DestinationFormProps {
@@ -78,7 +78,7 @@ export interface I_DestinationFormData {
 
 export interface I_DestinationPreviewProps {
     formData: I_DestinationFormData;
-    t: (key: string, params?: Record<string, any>) => string;
+    t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 export interface I_DestinationFormRef {
