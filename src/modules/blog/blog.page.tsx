@@ -70,7 +70,7 @@ export default function BlogPage() {
         sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
     }), [page, pageSize, sortField, sortOrder, isSearching]);
 
-    const { blogs: rawBlogs, loading, refetch, totalDocs: rawTotalDocs } = useGetBlogs(filter, options);
+    const { blogs: rawBlogs, loading, error, refetch, totalDocs: rawTotalDocs } = useGetBlogs(filter, options);
 
     const filteredBlogs = useMemo(() => {
         if (!isSearching)
@@ -234,6 +234,8 @@ export default function BlogPage() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 p-6">
                 <BlogList
+                    error={error}
+                    onRetry={() => refetch?.()}
                     blogs={blogs}
                     loading={loading}
                     onEditBlog={_handleEditBlog}

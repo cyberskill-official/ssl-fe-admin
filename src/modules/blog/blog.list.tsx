@@ -1,4 +1,4 @@
-import { Edit, FileText, Grid3X3, List, Plus, Search, Tag, Trash2, User } from 'lucide-react';
+import { AlertTriangle, Edit, FileText, Grid3X3, List, Plus, RefreshCw, Search, Tag, Trash2, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 
@@ -36,6 +36,8 @@ export function BlogList({
     onSortChange,
     selectedType = 'ALL',
     onTypeChange,
+    error,
+    onRetry,
 }: {
     blogs: T_Blog[];
     loading?: boolean;
@@ -60,6 +62,8 @@ export function BlogList({
     onSortChange?: (field: string, order: string) => void;
     selectedType?: string;
     onTypeChange?: (type: string) => void;
+    error?: Error | null;
+    onRetry?: () => void;
 }) {
     const { t } = useTranslate('blog');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
@@ -322,7 +326,28 @@ export function BlogList({
                     </p>
                 </motion.div>
             )}
-            {!loading && blogs.length === 0 && (
+            {!loading && error && blogs.length === 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center justify-center py-20 text-center"
+                >
+                    <div className="rounded-full bg-red-100 dark:bg-red-900/30 p-6 mb-4">
+                        <AlertTriangle className="h-12 w-12 text-red-400 dark:text-red-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        {t('error-loading-blogs')}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-4">
+                        {error?.message || t('something-went-wrong')}
+                    </p>
+                    <Button onClick={onRetry} variant="outline" className="gap-2">
+                        <RefreshCw className="h-4 w-4" />
+                        {t('retry')}
+                    </Button>
+                </motion.div>
+            )}
+            {!loading && !error && blogs.length === 0 && (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
