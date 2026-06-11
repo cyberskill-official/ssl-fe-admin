@@ -1,8 +1,8 @@
 import { AlertTriangle, Edit, FileText, Grid3X3, List, Plus, RefreshCw, Search, Tag, Trash2, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
-import type { T_Blog } from '#shared/graphql';
+import type { F_BlogListItemFragment } from '#shared/graphql';
 
 import { Badge, Button, Input, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from '#shared/component';
 import { DataTable } from '#shared/component/data-table';
@@ -11,6 +11,8 @@ import { useTranslate } from '#shared/i18n';
 
 import { getBlogText } from './blog-text';
 import { BlogCard } from './blog.card';
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 export function BlogList({
     blogs,
@@ -38,12 +40,17 @@ export function BlogList({
     onTypeChange,
     error,
     onRetry,
+    totalPages = 1,
+    hasNextPage = false,
+    hasPrevPage = false,
+    viewMode = 'grid',
+    onViewModeChange,
 }: {
-    blogs: T_Blog[];
+    blogs: F_BlogListItemFragment[];
     loading?: boolean;
-    onEditBlog?: (blog: T_Blog) => void;
+    onEditBlog?: (blog: F_BlogListItemFragment) => void;
     onCreateBlog?: () => void;
-    onDeleteBlog?: (blog: T_Blog) => void;
+    onDeleteBlog?: (blog: F_BlogListItemFragment) => void;
     onToggleStatus?: (blogId: string, currentIsActive: boolean) => void;
     updatingStatusId?: string;
     totalDocs?: number;
@@ -64,9 +71,13 @@ export function BlogList({
     onTypeChange?: (type: string) => void;
     error?: Error | null;
     onRetry?: () => void;
+    totalPages?: number;
+    hasNextPage?: boolean;
+    hasPrevPage?: boolean;
+    viewMode?: 'grid' | 'table';
+    onViewModeChange?: (view: 'grid' | 'table') => void;
 }) {
     const { t } = useTranslate('blog');
-    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
     const categoryOptions = [
         { value: 'ALL', label: t('all-categories'), icon: <Tag className="h-4 w-4" /> },
@@ -124,24 +135,6 @@ export function BlogList({
             header: t('author'),
             cell: ({ row }: any) => {
                 const blog = row.original;
-                const author = blog.author;
-
-                if (author) {
-                    return (
-                        <div className="flex items-center gap-2 text-xs">
-                            <User className="w-3 h-3" />
-                            <a
-                                href={`https://development.secretswingerlust.com/profile/${author.username}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium"
-                            >
-                                {author.username}
-                            </a>
-                        </div>
-                    );
-                }
-
                 return (
                     <div className="flex items-center gap-2 text-xs">
                         <User className="w-3 h-3" />
@@ -183,13 +176,6 @@ export function BlogList({
             cell: ({ row }: any) => (
                 <div className="text-sm text-gray-600 dark:text-gray-300">
                     <div>{new Date(row.original.createdAt).toLocaleDateString()}</div>
-                    {row.original.author?.username && (
-                        <div className="text-xs">
-                            by
-                            {' '}
-                            {row.original.author.username}
-                        </div>
-                    )}
                 </div>
             ),
         },
@@ -297,7 +283,7 @@ export function BlogList({
                         <Button
                             variant={viewMode === 'grid' ? 'default' : 'ghost'}
                             size="sm"
-                            onClick={() => setViewMode('grid')}
+                            onClick={() => onViewModeChange?.('grid')}
                             className="h-10 w-10 rounded-xl"
                         >
                             <Grid3X3 className="h-5 w-5" />
@@ -305,7 +291,7 @@ export function BlogList({
                         <Button
                             variant={viewMode === 'table' ? 'default' : 'ghost'}
                             size="sm"
-                            onClick={() => setViewMode('table')}
+                            onClick={() => onViewModeChange?.('table')}
                             className="h-10 w-10 rounded-xl"
                         >
                             <List className="h-5 w-5" />
@@ -395,12 +381,6 @@ export function BlogList({
                     showToolbar={false}
                     showColumnVisibility={true}
                     pageSize={pageSize}
-                    page={page}
-                    totalItems={totalDocs}
-                    onPageChange={onPageChange}
-                    onPageSizeChange={onPageSizeChange}
-                    searchValue={search}
-                    onSearchChange={onSearchChange}
                 />
             )}
             {/* Shared Pagination for both Grid and Table views */}
@@ -416,9 +396,10 @@ export function BlogList({
                         limit={pageSize ?? 10}
                         onPageChange={onPageChange}
                         onLimitChange={onPageSizeChange}
-                        hasNextPage={typeof (blogs as any).hasNextPage !== 'undefined' ? (blogs as any).hasNextPage : false}
-                        hasPrevPage={typeof (blogs as any).hasPrevPage !== 'undefined' ? (blogs as any).hasPrevPage : false}
-                        totalPages={typeof (blogs as any).totalPages !== 'undefined' ? (blogs as any).totalPages : Math.ceil(((totalDocs ?? 0) || blogs.length) / (pageSize ?? 10))}
+                        hasNextPage={hasNextPage}
+                        hasPrevPage={hasPrevPage}
+                        totalPages={totalPages}
+                        pageSizeOptions={PAGE_SIZE_OPTIONS}
                         className="border-0 bg-transparent"
                     />
                 </motion.div>

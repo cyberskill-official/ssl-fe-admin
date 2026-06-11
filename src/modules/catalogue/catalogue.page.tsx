@@ -2,9 +2,11 @@ import { Image } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { E_CatalogueType, Input_CreateCatalogue, T_Catalogue } from '#shared/graphql';
+import type { F_CatalogueListItemFragment, Input_CreateCatalogue, T_Catalogue } from '#shared/graphql';
 
 import { ConfirmDialog } from '#shared/component';
+import { E_CatalogueType } from '#shared/graphql';
+import { createEnumQueryParam, createIntegerQueryParam, createStringQueryParam, useListQueryState } from '#shared/hooks';
 import { useTranslate } from '#shared/i18n';
 import { usePortal } from '#shared/portal';
 
@@ -14,16 +16,27 @@ import { CatalogueForm } from './catalogue-form';
 import { CatalogueList } from './catalogue-list';
 import { useCreateCatalogue, useDeleteCatalogue, useGetCatalogues, useUpdateCatalogue } from './catalogue.hook';
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const CATALOGUE_TYPES = ['ALL', E_CatalogueType.BOOTYCALL, E_CatalogueType.PARTY, E_CatalogueType.TRAVEL] as const;
+const CATALOGUE_SORTS = ['createdAt-desc', 'createdAt-asc', 'type-asc', 'type-desc'] as const;
+const VIEW_MODES = ['grid', 'table'] as const;
+
+const CATALOGUE_QUERY_CONFIG = {
+    page: createIntegerQueryParam(1),
+    pageSize: createIntegerQueryParam(10, { allowedValues: PAGE_SIZE_OPTIONS }),
+    type: createEnumQueryParam<'ALL' | E_CatalogueType>('ALL', CATALOGUE_TYPES),
+    tag: createStringQueryParam('ALL'),
+    sort: createEnumQueryParam('createdAt-desc', CATALOGUE_SORTS),
+    view: createEnumQueryParam('grid', VIEW_MODES),
+};
+
 export default function CataloguePage() {
     const { t } = useTranslate('catalogue');
     const { setHeader } = usePortal();
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [search, setSearch] = useState('ALL');
-    const [selectedType, setSelectedType] = useState<E_CatalogueType | 'ALL'>('ALL');
-    const [sortField, setSortField] = useState<'type' | 'createdAt'>('createdAt');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-    const [deletingCatalogue, setDeletingCatalogue] = useState<T_Catalogue | null>(null);
+    const { state: queryState, setState: setQueryState } = useListQueryState(CATALOGUE_QUERY_CONFIG);
+    const { page, pageSize, type: selectedType, tag: search, view: viewMode } = queryState;
+    const [sortField, sortOrder] = queryState.sort.split('-') as ['type' | 'createdAt', 'asc' | 'desc'];
+    const [deletingCatalogue, setDeletingCatalogue] = useState<F_CatalogueListItemFragment | null>(null);
     const catalogueFormRef = useRef<I_CatalogueFormRef>(null);
 
     useEffect(() => {
@@ -59,12 +72,25 @@ export default function CataloguePage() {
         page,
         limit: pageSize,
         sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
-        populate: ['tag'],
+        projection: {
+            id: 1,
+            isDel: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            type: 1,
+            tagId: 1,
+            url: 1,
+        },
+        populate: [{ path: 'tag', select: 'id name type' }],
+        lean: true,
     }), [page, pageSize, sortField, sortOrder]);
 
     const {
         catalogues,
         totalDocs,
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
         loading,
         refetch,
     } = useGetCatalogues(filter, options);
@@ -77,11 +103,11 @@ export default function CataloguePage() {
         catalogueFormRef.current?.open();
     }, []);
 
-    const _handleEditCatalogue = useCallback((catalogue: T_Catalogue) => {
+    const _handleEditCatalogue = useCallback((catalogue: F_CatalogueListItemFragment) => {
         catalogueFormRef.current?.open(catalogue);
     }, []);
 
-    const _handleDeleteCatalogue = useCallback((catalogue: T_Catalogue) => {
+    const _handleDeleteCatalogue = useCallback((catalogue: F_CatalogueListItemFragment) => {
         setDeletingCatalogue(catalogue);
     }, []);
 
@@ -105,29 +131,33 @@ export default function CataloguePage() {
         refetch();
     }, [updateCatalogue, refetch]);
 
+    useEffect(() => {
+        if (!loading && totalPages > 0 && page > totalPages) {
+            // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+            setQueryState({ page: totalPages }, { replace: true });
+        }
+    }, [loading, page, setQueryState, totalPages]);
+
     const _handlePageChange = useCallback((newPage: number) => {
-        setPage(newPage);
-    }, []);
+        setQueryState({ page: newPage });
+    }, [setQueryState]);
 
     const _handlePageSizeChange = useCallback((newPageSize: number) => {
-        setPageSize(newPageSize);
-        setPage(1);
-    }, []);
+        setQueryState({ pageSize: newPageSize }, { resetPage: true });
+    }, [setQueryState]);
 
     const _handleSearchChange = useCallback((newSearch: string) => {
-        setSearch(newSearch);
-        setPage(1);
-    }, []);
+        setQueryState({ tag: newSearch }, { resetPage: true });
+    }, [setQueryState]);
 
     const _handleTypeChange = useCallback((newType: string) => {
-        setSelectedType(newType as E_CatalogueType | 'ALL');
-        setPage(1);
-    }, []);
+        setQueryState({ type: newType as E_CatalogueType | 'ALL' }, { resetPage: true });
+    }, [setQueryState]);
 
     const _handleSortChange = useCallback((field: string, order: 'asc' | 'desc') => {
-        setSortField(field as 'type' | 'createdAt');
-        setSortOrder(order);
-    }, []);
+        const sort = `${field}-${order}` as 'createdAt-asc' | 'createdAt-desc' | 'type-asc' | 'type-desc';
+        setQueryState({ sort }, { resetPage: true });
+    }, [setQueryState]);
 
     return (
         <motion.div
@@ -154,6 +184,11 @@ export default function CataloguePage() {
                 sortField={sortField}
                 sortOrder={sortOrder}
                 onSortChange={_handleSortChange}
+                totalPages={totalPages}
+                hasNextPage={hasNextPage}
+                hasPrevPage={hasPrevPage}
+                viewMode={viewMode}
+                onViewModeChange={view => setQueryState({ view })}
             />
 
             <CatalogueForm

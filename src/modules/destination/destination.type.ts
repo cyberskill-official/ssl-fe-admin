@@ -1,7 +1,40 @@
-import type { I_Input_Location } from '#modules/location/location/location.type';
-import type { E_DestinationAgeGroup, E_DestinationRating, E_DestinationType, T_Destination, T_Hotel, T_Seo } from '#shared/graphql';
+import type { E_DestinationAgeGroup, E_DestinationRating, E_DestinationType, T_Destination } from '#shared/graphql';
 
-export type { T_Hotel } from '#shared/graphql';
+interface I_DestinationFormMap {
+    latitude?: null | number;
+    longitude?: null | number;
+}
+
+interface I_DestinationFormLocation {
+    address?: null | string;
+    cityId?: null | string;
+    countryId?: null | string;
+    map?: I_DestinationFormMap | null;
+}
+
+interface I_DestinationFormRating {
+    rate?: null | number;
+    reason?: null | string;
+}
+
+interface I_DestinationFormSeo {
+    altTextForImages?: null | string;
+    description?: null | string;
+    imageAltTexts?: unknown;
+    keywords?: null | string[];
+    socialImage?: null | string;
+    socialMediaDescription?: null | string;
+    title?: null | string;
+    urlSlug?: unknown;
+}
+
+export interface I_DestinationFormHotel {
+    description?: unknown;
+    image?: null | string;
+    location?: I_DestinationFormLocation | null;
+    name?: unknown;
+    url?: null | string;
+}
 
 export interface I_DestinationListProps {
     destinations: T_Destination[];
@@ -56,22 +89,22 @@ export interface I_DestinationFormData {
     introductionHeadline: string;
     introductionContent: string;
     logo: string;
-    location?: I_Input_Location;
-    nearbyHotels: T_Hotel[];
+    location?: I_DestinationFormLocation;
+    nearbyHotels: I_DestinationFormHotel[];
     wearImage: string;
     womenDressCode: string;
     menDressCode: string;
     useDefaultText: boolean;
-    atmosphereRating: { rate: number; reason: string };
-    guestsRating: { rate: number; reason: string };
-    facilitiesRating: { rate: number; reason: string };
-    serviceRating: { rate: number; reason: string };
-    xFactorRating: { rate: number; reason: string };
+    atmosphereRating: I_DestinationFormRating;
+    guestsRating: I_DestinationFormRating;
+    facilitiesRating: I_DestinationFormRating;
+    serviceRating: I_DestinationFormRating;
+    xFactorRating: I_DestinationFormRating;
     highlightSex: string;
     highlightWellness: string;
     highlightBar: string;
     highlightDance: string;
-    seo: T_Seo;
+    seo: I_DestinationFormSeo;
     linkTo: string;
     isActive: boolean;
 }

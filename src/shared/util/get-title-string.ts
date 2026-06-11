@@ -7,12 +7,15 @@
  * as a child.
  */
 export function getTitleString(title: unknown): string {
-    if (typeof title === "string") return title;
-    if (title && typeof title === "object") {
+    if (typeof title === 'string')
+        return title;
+    if (title && typeof title === 'object') {
         const obj = title as Record<string, string>;
         const keys = Object.keys(obj);
-        if (keys.length === 0) return "";
-        return obj["en"] || obj[keys[0]] || "";
+        if (keys.length === 0)
+            return '';
+        const firstKey = keys[0];
+        return obj['en'] || (firstKey ? obj[firstKey] : '') || '';
     }
-    return "";
+    return '';
 }

@@ -1,3 +1,23 @@
+fragment F_TagOption on T_Tag {
+    id
+    name
+    type
+}
+
+fragment F_TagListItem on T_Tag {
+    id
+    createdAt
+    name
+    type
+    isCustom
+    usageCount
+    createdById
+    createdBy {
+        id
+        username
+    }
+}
+
 fragment F_Tag on T_Tag {
     id
     isDel

@@ -7,11 +7,11 @@ import type {
     createBlogMutationVariables,
     deleteBlogMutation,
     deleteBlogMutationVariables,
+    F_BlogListItemFragment,
     getBlogQuery,
     getBlogQueryVariables,
     getBlogsQuery,
     getBlogsQueryVariables,
-    T_Blog,
     updateBlogMutation,
     updateBlogMutationVariables,
 } from '#shared/graphql';
@@ -102,9 +102,9 @@ export function useGetBlogs(
         }
     }, [error]);
 
-    const blogs: T_Blog[]
+    const blogs: F_BlogListItemFragment[]
         = data?.getBlogs?.result?.docs?.filter(
-            (d): d is T_Blog => d !== null && d !== undefined,
+            (d): d is F_BlogListItemFragment => d !== null && d !== undefined,
         ) || [];
 
     const totalDocs = data?.getBlogs?.result?.totalDocs || 0;

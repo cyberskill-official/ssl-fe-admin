@@ -45,7 +45,7 @@ import { useTranslate } from '#shared/i18n';
 import { E_FormMode } from '#shared/typescript';
 import { cn } from '#shared/util';
 
-import type { I_DestinationFormData, I_DestinationFormProps, I_DestinationFormRef, T_Hotel } from './destination.type';
+import type { I_DestinationFormData, I_DestinationFormHotel, I_DestinationFormProps, I_DestinationFormRef } from './destination.type';
 
 import { getDestinationText } from './destination-text';
 import { useGetDestination } from './destination.hook';
@@ -431,6 +431,11 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
             }
         }
     }, []);
+
+    const _validateOptionalUrl = useCallback((value: unknown) => {
+        const url = typeof value === 'string' ? value.trim() : '';
+        return !url || URL.canParse(url) || t('error-invalid-url');
+    }, [t]);
 
     useKeyboardShortcuts({
         isActive: isOpen,
@@ -1178,7 +1183,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                             <Controller
                                                 name="websiteURL"
                                                 control={control}
-                                                rules={{ required: t('error-enter-website-url'), validate: (v) => { if (!v) return true; try { new URL((v || '').trim()); return true; } catch { return t('error-invalid-url'); } } }}
+                                                rules={{ required: t('error-enter-website-url'), validate: _validateOptionalUrl }}
                                                 render={({ field }) => (
                                                     <div className="relative">
                                                         <Input
@@ -1769,7 +1774,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 const currentHotels = watch('nearbyHotels') || [];
-                                                const newHotel: T_Hotel = {
+                                                const newHotel: I_DestinationFormHotel = {
                                                     name: '',
                                                     location: {
                                                         address: '',
@@ -2042,7 +2047,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                     <Controller
                                                         name={`nearbyHotels.${index}.url`}
                                                         control={control}
-                                                        rules={{ required: t('error-enter-website-url'), validate: (v) => { if (!v) return true; try { new URL((v || '').trim()); return true; } catch { return t('error-invalid-url'); } } }}
+                                                        rules={{ required: t('error-enter-website-url'), validate: _validateOptionalUrl }}
                                                         render={({ field }) => (
                                                             <div className="relative">
                                                                 <Input

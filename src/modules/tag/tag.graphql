@@ -14,7 +14,7 @@ query getTags($filter: Input_QueryTag, $options: JSON) {
         message
         result {
             docs {
-                ...F_Tag
+                ...F_TagListItem
             }
             totalDocs
             limit
@@ -27,6 +27,18 @@ query getTags($filter: Input_QueryTag, $options: JSON) {
             nextPage
             pagingCounter
             meta
+        }
+    }
+}
+
+query getTagOptions($filter: Input_QueryTag, $options: JSON) {
+    getTags(filter: $filter, options: $options) {
+        success
+        message
+        result {
+            docs {
+                ...F_TagOption
+            }
         }
     }
 }

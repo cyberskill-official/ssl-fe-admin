@@ -15,7 +15,7 @@ import { E_FormMode } from '#shared/typescript';
 
 import type { I_CatalogueFormRef } from './catalogue.type';
 
-import { useGetTags } from '../tag/tag.hook';
+import { useGetTagOptions } from '../tag/tag.hook';
 import { useUpload } from '../upload/upload.hook';
 
 const IMAGE_FILE_RE = /\.(?:jpg|jpeg|png|gif|webp)$/i;
@@ -42,9 +42,14 @@ export function CatalogueForm({ ref, onCreateSubmit, onUpdateSubmit, creating, u
     const [uploading, setUploading] = useState(false);
     const { upload } = useUpload();
 
-    const { tags, loading: tagsLoading } = useGetTags(
+    const { tags, loading: tagsLoading } = useGetTagOptions(
         { isDel: false, type: E_TagType.CATALOGUE },
-        { sort: { name: 1 } },
+        {
+            pagination: false,
+            sort: { name: 1 },
+            projection: { id: 1, name: 1, type: 1 },
+            lean: true,
+        },
     );
 
     const FORM_DEFAULT_VALUES: Input_CreateCatalogue = {

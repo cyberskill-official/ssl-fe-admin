@@ -14,7 +14,7 @@ query getBlogs($filter: Input_QueryBlog, $options: JSON) {
         message
         result {
             docs {
-                ...F_Blog
+                ...F_BlogListItem
             }
             totalDocs
             limit

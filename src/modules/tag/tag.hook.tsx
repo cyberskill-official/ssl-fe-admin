@@ -7,11 +7,14 @@ import type {
     createTagMutationVariables,
     deleteTagMutation,
     deleteTagMutationVariables,
+    F_TagListItemFragment,
+    F_TagOptionFragment,
+    getTagOptionsQuery,
+    getTagOptionsQueryVariables,
     getTagQuery,
     getTagQueryVariables,
     getTagsQuery,
     getTagsQueryVariables,
-    T_Tag,
     updateTagMutation,
     updateTagMutationVariables,
 } from '#shared/graphql';
@@ -20,6 +23,7 @@ import {
     createTagDocument,
     deleteTagDocument,
     getTagDocument,
+    getTagOptionsDocument,
     getTagsDocument,
     updateTagDocument,
 } from '#shared/graphql';
@@ -51,9 +55,9 @@ export function useGetTags(
         fetchPolicy: 'network-only',
     });
 
-    const tags: T_Tag[]
+    const tags: F_TagListItemFragment[]
         = data?.getTags?.result?.docs?.filter(
-            (t): t is T_Tag => t !== null && t !== undefined,
+            (t): t is F_TagListItemFragment => t !== null && t !== undefined,
         ) || [];
 
     const totalDocs = data?.getTags?.result?.totalDocs || 0;
@@ -74,6 +78,25 @@ export function useGetTags(
         loading,
         refetch,
     };
+}
+
+export function useGetTagOptions(
+    filter?: getTagOptionsQueryVariables['filter'],
+    options?: getTagOptionsQueryVariables['options'],
+) {
+    const { data, loading } = useQuery<getTagOptionsQuery, getTagOptionsQueryVariables>(
+        getTagOptionsDocument,
+        {
+            variables: { filter, options },
+            fetchPolicy: 'network-only',
+        },
+    );
+
+    const tags: F_TagOptionFragment[] = data?.getTags?.result?.docs?.filter(
+        (tag): tag is F_TagOptionFragment => tag !== null && tag !== undefined,
+    ) || [];
+
+    return { tags, loading };
 }
 
 export function useCreateTag() {

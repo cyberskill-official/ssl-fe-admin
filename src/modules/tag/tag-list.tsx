@@ -1,7 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
 
 import {
-    AlertTriangle,
     Cigarette,
     Coffee,
     Edit,
@@ -25,9 +24,9 @@ import {
     Users,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
-import type { E_TagType, T_Tag } from '#shared/graphql';
+import type { E_TagType, F_TagListItemFragment } from '#shared/graphql';
 
 import { Badge, Button, Input, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '#shared/component';
 import { DataTable } from '#shared/component/data-table';
@@ -36,6 +35,8 @@ import { useTranslate } from '#shared/i18n';
 import type { I_TagListProps } from './tag.type';
 
 import { TagCard } from './tag-card';
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 const UNDERSCORE_RE = /_/g;
 
@@ -93,9 +94,17 @@ export function TagList({
     sortField = 'usageCount',
     sortOrder = 'desc',
     onSortChange,
+    showCustomOnly = false,
+    onShowCustomOnlyChange,
+    showLowUsage = false,
+    onShowLowUsageChange,
+    viewMode = 'grid',
+    onViewModeChange,
+    totalPages = 1,
+    hasNextPage = false,
+    hasPrevPage = false,
 }: I_TagListProps) {
     const { t } = useTranslate('tag');
-    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
     const tagTypeOptions = [
         { value: 'ALL', label: t('all-types'), icon: <TagIcon className="h-4 w-4" /> },
@@ -115,26 +124,6 @@ export function TagList({
         { value: 'SMOKING_HABITS', label: t('smoking-habits'), icon: <Cigarette className="h-4 w-4" /> },
         { value: 'WILLINGNESS_TO_GO', label: t('willingness-to-go'), icon: <MapPin className="h-4 w-4" /> },
     ];
-
-    const [showCustomOnly, setShowCustomOnly] = useState(false);
-    const [showLowUsage, setShowLowUsage] = useState(false);
-
-    // Calculate counts
-    const customTagsCount = tags.filter(t => t.isCustom === true).length;
-    const lowUsageTags = tags.filter(t => (t.usageCount || 0) <= 5).length;
-
-    // Filter tags based on custom/low usage toggles
-    const filteredTags = tags.filter((tag) => {
-        // If showing custom only, exclude non-custom tags
-        if (showCustomOnly && tag.isCustom !== true) {
-            return false;
-        }
-        // If showing low usage only, exclude tags with more than 5 uses
-        if (showLowUsage && (tag.usageCount || 0) > 5) {
-            return false;
-        }
-        return true;
-    });
 
     const sortOptions = [
         { value: 'usageCount-desc', label: t('most-used'), field: 'usageCount', order: 'desc' },
@@ -160,7 +149,7 @@ export function TagList({
     };
 
     // Table columns for DataTable
-    const columns: ColumnDef<T_Tag>[] = useMemo(() => [
+    const columns: ColumnDef<F_TagListItemFragment>[] = useMemo(() => [
         {
             accessorKey: 'name',
             header: t('name'),
@@ -249,70 +238,6 @@ export function TagList({
 
     return (
         <div className="space-y-6">
-            {/* Warning Banner for Custom Tags Issue */}
-            {customTagsCount > 50 && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-l-4 border-amber-500 p-6 rounded-xl shadow-lg"
-                >
-                    <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                            <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-2">
-                                ⚠️
-                                {' '}
-                                {t('Tag Management Alert')}
-                            </h3>
-                            <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
-                                <strong>
-                                    {customTagsCount}
-                                    {' '}
-                                    custom tags
-                                </strong>
-                                {' '}
-                                have been created by users. This can cause chaos as each language has different words for the same concepts (e.g., sexual activities).
-                            </p>
-                            <div className="bg-white/50 dark:bg-gray-800/50 p-4 rounded-lg mb-3">
-                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                    <strong>Recommendations:</strong>
-                                </p>
-                                <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                                    <li>Use "Custom Tags" filter to review user-created tags</li>
-                                    <li>Use "Low Usage" filter to find potential duplicates or spam</li>
-                                    <li>Delete unused custom tags and consolidate similar ones</li>
-                                    <li>Create official admin tags to replace common custom tags</li>
-                                    <li>Consider disabling user tag creation in production</li>
-                                </ul>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowCustomOnly(true)}
-                                    className="bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-300 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
-                                >
-                                    <Star className="h-3 w-3 mr-1" />
-                                    {t('Review Custom Tags')}
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowLowUsage(true)}
-                                    className="bg-white dark:bg-gray-800 text-red-700 dark:text-red-300 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                >
-                                    ⚠️
-                                    {' '}
-                                    {t('Find Low Usage')}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-            )}
-
             {/* Search and Filters */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -325,7 +250,7 @@ export function TagList({
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                    🔍 Filtering:
+                                    Filtering:
                                 </span>
                                 {showCustomOnly && (
                                     <Badge className="bg-amber-500 text-white">Custom Tags Only</Badge>
@@ -333,17 +258,6 @@ export function TagList({
                                 {showLowUsage && (
                                     <Badge className="bg-red-500 text-white">Low Usage (≤5 uses)</Badge>
                                 )}
-                            </div>
-                            <div className="text-sm text-blue-700 dark:text-blue-300">
-                                Showing
-                                {' '}
-                                <strong>{filteredTags.length}</strong>
-                                {' '}
-                                of
-                                {' '}
-                                <strong>{tags.length}</strong>
-                                {' '}
-                                tags
                             </div>
                         </div>
                     </div>
@@ -401,31 +315,21 @@ export function TagList({
                         <Button
                             variant={showCustomOnly ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setShowCustomOnly(!showCustomOnly)}
+                            onClick={() => onShowCustomOnlyChange?.(!showCustomOnly)}
                             className={`h-10 px-4 ${showCustomOnly ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
                             title={t('Show only user-created tags')}
                         >
                             <Star className="h-4 w-4 mr-2" />
                             {t('Custom Tags')}
-                            {' '}
-                            (
-                            {customTagsCount}
-                            )
                         </Button>
                         <Button
                             variant={showLowUsage ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setShowLowUsage(!showLowUsage)}
+                            onClick={() => onShowLowUsageChange?.(!showLowUsage)}
                             className={`h-10 px-4 ${showLowUsage ? 'bg-red-500 hover:bg-red-600 text-white' : ''}`}
                             title={t('Show tags with 5 or fewer uses - potential duplicates or spam')}
                         >
-                            ⚠️
-                            {' '}
                             {t('Low Usage')}
-                            {' '}
-                            (
-                            {lowUsageTags}
-                            )
                         </Button>
                     </div>
 
@@ -433,7 +337,7 @@ export function TagList({
                         <Button
                             variant={viewMode === 'grid' ? 'default' : 'ghost'}
                             size="sm"
-                            onClick={() => setViewMode('grid')}
+                            onClick={() => onViewModeChange?.('grid')}
                             className="h-8 px-3"
                         >
                             <Grid3X3 className="h-4 w-4" />
@@ -441,7 +345,7 @@ export function TagList({
                         <Button
                             variant={viewMode === 'table' ? 'default' : 'ghost'}
                             size="sm"
-                            onClick={() => setViewMode('table')}
+                            onClick={() => onViewModeChange?.('table')}
                             className="h-8 px-3"
                         >
                             <List className="h-4 w-4" />
@@ -461,7 +365,7 @@ export function TagList({
                             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
                         >
                             <AnimatePresence>
-                                {filteredTags.map(tag => (
+                                {tags.map(tag => (
                                     <TagCard
                                         key={tag.id}
                                         tag={tag}
@@ -477,20 +381,14 @@ export function TagList({
                     // Table View
                         <DataTable
                             columns={columns}
-                            data={filteredTags}
+                            data={tags}
                             searchKey="name"
                             searchPlaceholder={t('search-tags')}
                             showPagination={false}
                             showToolbar={false}
                             showColumnVisibility={true}
                             pageSize={pageSize}
-                            pageSizeOptions={[10, 20, 50, 100]}
-                            page={page}
-                            totalItems={totalDocs}
-                            onPageChange={onPageChange}
-                            onPageSizeChange={onPageSizeChange}
-                            searchValue={search}
-                            onSearchChange={onSearchChange}
+                            pageSizeOptions={[10, 25, 50, 100]}
                         />
                     )}
 
@@ -507,16 +405,17 @@ export function TagList({
                         limit={pageSize}
                         onPageChange={onPageChange}
                         onLimitChange={onPageSizeChange}
-                        hasNextPage={page * pageSize < totalDocs}
-                        hasPrevPage={page > 1}
-                        totalPages={Math.ceil(totalDocs / pageSize)}
+                        hasNextPage={hasNextPage}
+                        hasPrevPage={hasPrevPage}
+                        totalPages={totalPages}
+                        pageSizeOptions={PAGE_SIZE_OPTIONS}
                         className="border-0 bg-transparent"
                     />
                 </motion.div>
             )}
 
             {/* Empty State */}
-            {!loading && filteredTags.length === 0 && (
+            {!loading && tags.length === 0 && (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}

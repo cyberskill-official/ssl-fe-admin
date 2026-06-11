@@ -14,7 +14,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 
-import type { T_Catalogue } from '#shared/graphql';
+import type { F_CatalogueListItemFragment } from '#shared/graphql';
 
 import { Badge, Button, Dialog, DialogContent, DialogHeader, DialogTitle, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '#shared/component';
 import { DataTable } from '#shared/component/data-table';
@@ -23,11 +23,12 @@ import { useTranslate } from '#shared/i18n';
 
 import type { I_CatalogueListProps } from './catalogue.type';
 
-import { useGetTags } from '../tag/tag.hook';
+import { useGetTagOptions } from '../tag/tag.hook';
 import { CatalogueCard } from './catalogue-card';
 
 const UNDERSCORE_RE = /_/g;
 const WORD_BOUNDARY_RE = /\b\w/g;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 function getTagTypeFallback(type?: string | null) {
     return type
@@ -116,14 +117,26 @@ export function CatalogueList({
     onSearchChange,
     selectedType = 'ALL',
     onTypeChange,
+    totalPages = 1,
+    hasNextPage = false,
+    hasPrevPage = false,
+    viewMode = 'grid',
+    onViewModeChange,
 }: I_CatalogueListProps) {
     const { t } = useTranslate('catalogue');
     const { t: tTag } = useTranslate('tag');
-    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-    const [selectedMedia, setSelectedMedia] = useState<T_Catalogue | null>(null);
+    const [selectedMedia, setSelectedMedia] = useState<F_CatalogueListItemFragment | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { tags } = useGetTags({ isDel: false, type: E_TagType.CATALOGUE }, { pagination: false });
+    const { tags } = useGetTagOptions(
+        { isDel: false, type: E_TagType.CATALOGUE },
+        {
+            pagination: false,
+            sort: { name: 1 },
+            projection: { id: 1, name: 1, type: 1 },
+            lean: true,
+        },
+    );
 
     const catalogueTypeOptions = [
         { value: 'ALL', label: t('all-types'), icon: <Image className="h-4 w-4" /> },
@@ -140,12 +153,12 @@ export function CatalogueList({
         })),
     ];
 
-    const handleMediaClick = (catalogue: T_Catalogue) => {
+    const handleMediaClick = (catalogue: F_CatalogueListItemFragment) => {
         setSelectedMedia(catalogue);
         setIsModalOpen(true);
     };
 
-    const columns: ColumnDef<T_Catalogue>[] = [
+    const columns: ColumnDef<F_CatalogueListItemFragment>[] = [
         {
             accessorKey: 'type',
             header: t('type'),
@@ -277,11 +290,7 @@ export function CatalogueList({
         },
     ];
 
-    const filteredCatalogues = catalogues.filter((catalogue) => {
-        const matchesSearch = !search || search === 'ALL' || catalogue.tagId === search;
-        const matchesType = selectedType === 'ALL' || catalogue.type === selectedType;
-        return matchesSearch && matchesType;
-    });
+    const filteredCatalogues = catalogues;
 
     return (
         <>
@@ -321,7 +330,7 @@ export function CatalogueList({
                         <Button
                             variant={viewMode === 'grid' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setViewMode('grid')}
+                            onClick={() => onViewModeChange?.('grid')}
                             className="h-10 w-10 p-0"
                         >
                             <Grid3X3 className="h-4 w-4" />
@@ -329,7 +338,7 @@ export function CatalogueList({
                         <Button
                             variant={viewMode === 'table' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setViewMode('table')}
+                            onClick={() => onViewModeChange?.('table')}
                             className="h-10 w-10 p-0"
                         >
                             <List className="h-4 w-4" />
@@ -398,9 +407,10 @@ export function CatalogueList({
                                     limit={pageSize}
                                     onPageChange={onPageChange}
                                     onLimitChange={onPageSizeChange}
-                                    hasNextPage={page * pageSize < totalDocs}
-                                    hasPrevPage={page > 1}
-                                    totalPages={Math.ceil(totalDocs / pageSize)}
+                                    hasNextPage={hasNextPage}
+                                    hasPrevPage={hasPrevPage}
+                                    totalPages={totalPages}
+                                    pageSizeOptions={PAGE_SIZE_OPTIONS}
                                     className="border-0 bg-transparent"
                                 />
                             )

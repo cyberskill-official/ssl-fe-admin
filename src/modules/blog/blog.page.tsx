@@ -1,13 +1,16 @@
 import { FileText } from 'lucide-react';
 import { motion } from 'motion/react';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { E_SocialPlatform, Input_CreateBlog, Input_UpdateBlog, T_Blog } from '#shared/graphql';
+import type { E_SocialPlatform, F_BlogListItemFragment, Input_CreateBlog, Input_UpdateBlog, T_Blog } from '#shared/graphql';
 
 import { ConfirmDialog } from '#shared/component/confirm-dialog';
 import { E_BlogCategory, E_BlogType } from '#shared/graphql';
+import { createEnumQueryParam, createIntegerQueryParam, createStringQueryParam, useDebouncedQueryValue, useListQueryState } from '#shared/hooks';
 import { useTranslate } from '#shared/i18n';
 import { usePortal } from '#shared/portal';
+
+import type { I_BlogFormApi } from './blog-form';
 
 import { getBlogFormText, getBlogText } from './blog-text';
 import { useCreateBlog, useDeleteBlog, useGetBlogLazy, useGetBlogs, useUpdateBlog } from './blog.hook';
@@ -15,28 +18,41 @@ import { BlogList } from './blog.list';
 
 const BlogForm = lazy(() => import('./blog-form').then(module => ({ default: module.BlogForm })));
 
-interface I_BlogFormApi {
-    open: (blog?: T_Blog) => void;
-    close: () => void;
-}
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const BLOG_TYPES = ['ALL', E_BlogType.BLOG, E_BlogType.PODCAST] as const;
+const BLOG_CATEGORIES = ['ALL', ...Object.values(E_BlogCategory)] as const;
+const BLOG_STATUSES = ['ALL', 'ACTIVE', 'INACTIVE'] as const;
+const BLOG_SORTS = ['createdAt-desc', 'createdAt-asc', 'title-asc', 'title-desc', 'category-asc', 'category-desc'] as const;
+const VIEW_MODES = ['grid', 'table'] as const;
+
+const BLOG_QUERY_CONFIG = {
+    page: createIntegerQueryParam(1),
+    pageSize: createIntegerQueryParam(10, { allowedValues: PAGE_SIZE_OPTIONS }),
+    q: createStringQueryParam(),
+    type: createEnumQueryParam<'ALL' | E_BlogType>('ALL', BLOG_TYPES),
+    category: createEnumQueryParam<'ALL' | E_BlogCategory>('ALL', BLOG_CATEGORIES),
+    status: createEnumQueryParam('ALL', BLOG_STATUSES),
+    sort: createEnumQueryParam('createdAt-desc', BLOG_SORTS),
+    view: createEnumQueryParam('grid', VIEW_MODES),
+};
 
 export default function BlogPage() {
     const { t } = useTranslate('blog');
     const { setHeader } = usePortal();
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [search, setSearch] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<E_BlogCategory | 'ALL'>('ALL');
-    const [selectedStatus, setSelectedStatus] = useState<'ACTIVE' | 'INACTIVE' | 'ALL'>('ALL');
-    const [sortField, setSortField] = useState<'title' | 'category' | 'createdAt'>('createdAt');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-    const [selectedType, setSelectedType] = useState<'ALL' | E_BlogType>('ALL');
+    const { state: queryState, setState: setQueryState } = useListQueryState(BLOG_QUERY_CONFIG);
+    const { page, pageSize, type: selectedType, category: selectedCategory, status: selectedStatus, view: viewMode } = queryState;
+    const [sortField, sortOrder] = queryState.sort.split('-') as ['title' | 'category' | 'createdAt', 'asc' | 'desc'];
+    const commitSearch = useCallback((q: string) => {
+        setQueryState({ q }, { replace: true, resetPage: true });
+    }, [setQueryState]);
+    const [search, setSearch] = useDebouncedQueryValue(queryState.q, commitSearch);
     const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
-    const [blogToDelete, setBlogToDelete] = useState<T_Blog | null>(null);
-    const [blogFormApi, setBlogFormApi] = useState<I_BlogFormApi | null>(null);
+    const [blogToDelete, setBlogToDelete] = useState<F_BlogListItemFragment | null>(null);
+    const blogFormApiRef = useRef<I_BlogFormApi | null>(null);
     const [shouldRenderBlogForm, setShouldRenderBlogForm] = useState(false);
     const [pendingFormBlog, setPendingFormBlog] = useState<T_Blog | undefined>();
     const [formOpenVersion, setFormOpenVersion] = useState(0);
+    const openedFormVersionRef = useRef(-1);
 
     useEffect(() => {
         setHeader({
@@ -47,10 +63,12 @@ export default function BlogPage() {
         return () => setHeader(null);
     }, [setHeader, t]);
 
-    const isSearching = search.trim().length > 0;
-
     const filter = useMemo(() => {
-        const filterObj: any = {};
+        const filterObj: {
+            category?: E_BlogCategory;
+            isActive?: boolean;
+            type?: E_BlogType;
+        } = {};
 
         if (selectedCategory !== 'ALL')
             filterObj.category = selectedCategory;
@@ -65,43 +83,37 @@ export default function BlogPage() {
     }, [selectedCategory, selectedStatus, selectedType]);
 
     const options = useMemo(() => ({
-        page: isSearching ? 1 : page,
-        limit: isSearching ? 1000 : pageSize,
+        page,
+        limit: pageSize,
         sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
-    }), [page, pageSize, sortField, sortOrder, isSearching]);
+        search: queryState.q,
+        projection: {
+            id: 1,
+            createdAt: 1,
+            title: 1,
+            type: 1,
+            category: 1,
+            featuredImage: 1,
+            hostName: 1,
+            readCount: 1,
+            isActive: 1,
+        },
+        lean: true,
+    }), [page, pageSize, queryState.q, sortField, sortOrder]);
 
-    const { blogs: rawBlogs, loading, error, refetch, totalDocs: rawTotalDocs } = useGetBlogs(filter, options);
-
-    const filteredBlogs = useMemo(() => {
-        if (!isSearching)
-            return rawBlogs;
-        const searchTerm = search.toLowerCase().trim();
-        return rawBlogs.filter((blog: T_Blog) =>
-            getBlogText(blog?.title).toLowerCase().includes(searchTerm)
-            || getBlogText(blog?.authorName).toLowerCase().includes(searchTerm)
-            || getBlogText(blog?.hostName).toLowerCase().includes(searchTerm),
-        );
-    }, [rawBlogs, search, isSearching]);
-
-    const blogs = useMemo(() => {
-        if (!isSearching)
-            return filteredBlogs;
-        const start = (page - 1) * pageSize;
-        return filteredBlogs.slice(start, start + pageSize);
-    }, [filteredBlogs, page, pageSize, isSearching]);
-
-    const totalDocs = isSearching ? filteredBlogs.length : rawTotalDocs;
+    const { blogs, loading, error, refetch, totalDocs, totalPages, hasNextPage, hasPrevPage } = useGetBlogs(filter, options);
     const { getBlog, loading: fetchingBlog } = useGetBlogLazy();
     const { createBlog, loading: creatingBlog } = useCreateBlog();
     const { updateBlog, loading: updatingBlog } = useUpdateBlog();
     const { deleteBlog } = useDeleteBlog();
 
-    useEffect(() => {
-        if (!shouldRenderBlogForm || !blogFormApi)
-            return;
-
-        blogFormApi.open(pendingFormBlog);
-    }, [blogFormApi, formOpenVersion, pendingFormBlog, shouldRenderBlogForm]);
+    const _setBlogFormApi = useCallback((api: I_BlogFormApi | null) => {
+        blogFormApiRef.current = api;
+        if (api && shouldRenderBlogForm && openedFormVersionRef.current !== formOpenVersion) {
+            openedFormVersionRef.current = formOpenVersion;
+            api.open(pendingFormBlog);
+        }
+    }, [formOpenVersion, pendingFormBlog, shouldRenderBlogForm]);
 
     const _handleCreateBlog = useCallback(() => {
         setPendingFormBlog(undefined);
@@ -109,24 +121,22 @@ export default function BlogPage() {
         setFormOpenVersion(version => version + 1);
     }, []);
 
-    const _handleEditBlog = useCallback(async (blog: T_Blog) => {
-        // Always fetch the full blog detail to ensure content is present (especially for local env)
+    const _handleEditBlog = useCallback(async (blog: F_BlogListItemFragment) => {
         try {
             const { data } = await getBlog({ id: blog.id });
             const fullBlog = data?.getBlog?.result;
-            setPendingFormBlog(fullBlog || blog);
+            if (!fullBlog)
+                return;
+            setPendingFormBlog(fullBlog);
             setShouldRenderBlogForm(true);
             setFormOpenVersion(version => version + 1);
         }
         catch (error) {
             console.error('Failed to fetch blog details:', error);
-            setPendingFormBlog(blog);
-            setShouldRenderBlogForm(true);
-            setFormOpenVersion(version => version + 1);
         }
     }, [getBlog]);
 
-    const _handleDeleteBlog = useCallback((blog: T_Blog) => {
+    const _handleDeleteBlog = useCallback((blog: F_BlogListItemFragment) => {
         setBlogToDelete(blog);
     }, []);
 
@@ -200,35 +210,36 @@ export default function BlogPage() {
         await refetch();
     }, [updateBlog, refetch]);
 
+    useEffect(() => {
+        if (!loading && totalPages > 0 && page > totalPages) {
+            // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+            setQueryState({ page: totalPages }, { replace: true });
+        }
+    }, [loading, page, setQueryState, totalPages]);
+
     const _handlePageChange = useCallback((newPage: number) => {
-        setPage(newPage);
-    }, []);
+        setQueryState({ page: newPage });
+    }, [setQueryState]);
 
     const _handlePageSizeChange = useCallback((newPageSize: number) => {
-        setPageSize(newPageSize);
-        setPage(1);
-    }, []);
+        setQueryState({ pageSize: newPageSize }, { resetPage: true });
+    }, [setQueryState]);
 
     const _handleSearchChange = useCallback((value: string) => {
         setSearch(value);
-        setPage(1);
-    }, []);
+    }, [setSearch]);
 
     const _handleCategoryChange = useCallback((category: E_BlogCategory | 'ALL') => {
-        setSelectedCategory(category);
-        setPage(1);
-    }, []);
+        setQueryState({ category }, { resetPage: true });
+    }, [setQueryState]);
 
     const _handleStatusChange = useCallback((status: 'ACTIVE' | 'INACTIVE' | 'ALL') => {
-        setSelectedStatus(status);
-        setPage(1);
-    }, []);
+        setQueryState({ status }, { resetPage: true });
+    }, [setQueryState]);
 
     const _handleSortChange = useCallback((field: 'title' | 'category' | 'createdAt', order: 'asc' | 'desc') => {
-        setSortField(field);
-        setSortOrder(order);
-        setPage(1);
-    }, []);
+        setQueryState({ sort: `${field}-${order}` }, { resetPage: true });
+    }, [setQueryState]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -258,15 +269,17 @@ export default function BlogPage() {
                     sortOrder={sortOrder}
                     onSortChange={(f, o) => _handleSortChange(f as any, o as any)}
                     selectedType={selectedType}
-                    onTypeChange={(v) => {
-                        setSelectedType(v as any);
-                        setPage(1);
-                    }}
+                    onTypeChange={v => setQueryState({ type: v as 'ALL' | E_BlogType }, { resetPage: true })}
+                    totalPages={totalPages}
+                    hasNextPage={hasNextPage}
+                    hasPrevPage={hasPrevPage}
+                    viewMode={viewMode}
+                    onViewModeChange={view => setQueryState({ view })}
                 />
                 {shouldRenderBlogForm && (
                     <Suspense fallback={null}>
                         <BlogForm
-                            ref={setBlogFormApi}
+                            ref={_setBlogFormApi}
                             onCreateSubmit={_handleCreateSubmit}
                             onUpdateSubmit={_handleUpdateSubmit}
                             creating={creatingBlog}

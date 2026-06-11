@@ -1,7 +1,7 @@
 import { Edit, Eye, FileText, Trash2, User } from 'lucide-react';
 import { motion } from 'motion/react';
 
-import type { T_Blog } from '#shared/graphql';
+import type { F_BlogListItemFragment } from '#shared/graphql';
 
 import { Badge, Button, Switch } from '#shared/component';
 
@@ -15,9 +15,9 @@ export function BlogCard({
     updatingStatusId,
     t,
 }: {
-    blog: T_Blog;
-    onEdit: (blog: T_Blog) => void;
-    onDelete: (blog: T_Blog) => void;
+    blog: F_BlogListItemFragment;
+    onEdit: (blog: F_BlogListItemFragment) => void;
+    onDelete: (blog: F_BlogListItemFragment) => void;
     onToggleStatus: (blogId: string, currentIsActive: boolean) => void;
     updatingStatusId?: string;
     t: (key: string, params?: Record<string, any>) => string;
@@ -25,7 +25,6 @@ export function BlogCard({
     const isActive = blog.isActive || false;
     const category = blog.category || '';
     const featuredImage = blog.featuredImage;
-    const author = blog.author;
     const title = getBlogText(blog.title, 'Blog');
     const hostName = getBlogText(blog.hostName, t('unknown-author'));
 
@@ -103,20 +102,7 @@ export function BlogCard({
                 <div className="flex items-center gap-2 mb-3 text-xs text-gray-600 dark:text-gray-300">
                     <User className="w-3 h-3" />
                     <div className="flex items-center gap-1 line-clamp-1">
-                        {author
-                            ? (
-                                    <a
-                                        href={`https://development.secretswingerlust.com/profile/${author.username}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium"
-                                    >
-                                        {author.username}
-                                    </a>
-                                )
-                            : (
-                                    <span>{hostName}</span>
-                                )}
+                        <span>{hostName}</span>
                     </div>
                 </div>
 
@@ -127,13 +113,6 @@ export function BlogCard({
                         :&nbsp;
                         {new Date(blog.createdAt).toLocaleDateString()}
                     </div>
-                    {blog.author?.username && (
-                        <div>
-                            {t('by')}
-                            :&nbsp;
-                            {blog.author.username}
-                        </div>
-                    )}
                 </div>
 
                 {/* Read Count */}

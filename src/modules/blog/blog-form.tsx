@@ -1,4 +1,6 @@
 /* eslint-disable react-dom/no-unsafe-iframe-sandbox */
+import type { Ref } from 'react';
+
 import {
     Eye,
     FileText,
@@ -35,6 +37,11 @@ import { getPodcastEmbedHeight, normalizePodcastEmbedUrl } from './podcast-embed
 const HTML_TAG_RE = /<[^>]*>/g;
 const UNDERSCORE_RE = /_/g;
 const WORD_START_RE = /\b\w/g;
+
+export interface I_BlogFormApi {
+    open: (blog?: T_Blog) => void;
+    close: () => void;
+}
 
 function BlogPreview({ formData, type, selectedAuthor }: { formData: any; type: E_BlogType; selectedAuthor?: T_User | null }) {
     const isPodcast = type === E_BlogType.PODCAST;
@@ -271,7 +278,7 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
     creating?: boolean;
     updating?: boolean;
     fetching?: boolean;
-} & { ref?: React.RefObject<any> }) {
+} & { ref?: Ref<I_BlogFormApi> }) {
     const { t } = useTranslate('blog');
     const [isOpen, setIsOpen] = useState(false);
     const [mode, setMode] = useState<'create' | 'update'>('create');
@@ -1132,22 +1139,9 @@ export function BlogForm({ ref, onCreateSubmit, onUpdateSubmit, creating, updati
                                     {/* Social Media Links Section */}
                                     <motion.div className="rounded-3xl border-0 shadow-2xl bg-gradient-to-br from-pink-200/60 via-purple-100/60 to-blue-100/60 dark:from-pink-900/40 dark:to-blue-900/40 p-8 glassmorphism transition-all hover:scale-[1.01]">
                                         <BlogSocialLinks
-                                            formData={{
-                                                ...getValues(),
-                                                title: getBlogFormText(getValues().title),
-                                                authorName: getBlogFormText(getValues().authorName),
-                                                websiteName: getBlogFormText(getValues().websiteName),
-                                                websiteURL: getBlogFormText(getValues().websiteURL),
-                                                type: getValues().type ?? E_BlogType.BLOG,
-                                                category: getValues().category ?? E_BlogCategory.DATING,
-                                                featuredImage: getBlogFormText(getValues().featuredImage),
-                                                contentHeadline: getBlogFormText(getValues().contentHeadline),
-                                                contentSubHeadline: getBlogFormText(getValues().contentSubHeadline),
-                                                content: getBlogText(getValues().content),
-                                                socialLinks: (getValues().socialLinks ?? []).filter(
-                                                    (l): l is { type: E_SocialPlatform; url: string } => !!l && !!l.type,
-                                                ),
-                                            }}
+                                            socialLinks={(getValues().socialLinks ?? []).filter(
+                                                (l): l is { type: E_SocialPlatform; url: string } => !!l && !!l.type,
+                                            )}
                                             onSocialLinksChange={(links) => {
                                                 setValue('socialLinks', links.map(({ type, url }) => ({ type, url })) as T_SocialLink[]);
                                             }}

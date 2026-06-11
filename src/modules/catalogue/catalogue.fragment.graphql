@@ -1,5 +1,18 @@
 #import "../tag/tag.fragment.graphql"
 
+fragment F_CatalogueListItem on T_Catalogue {
+    id
+    isDel
+    createdAt
+    updatedAt
+    type
+    tagId
+    tag {
+        ...F_TagOption
+    }
+    url
+}
+
 fragment F_Catalogue on T_Catalogue {
     id
     isDel
