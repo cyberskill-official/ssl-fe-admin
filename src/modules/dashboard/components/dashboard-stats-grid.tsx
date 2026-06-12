@@ -39,7 +39,7 @@ export function DashboardStatsGrid({ stats }: I_DashboardStatsGridProps) {
                         color={stat.color}
                         bgColor={stat.bgColor}
                         gradient={stat.gradient}
-                        trend={stat.trend}
+                        trend={stat.trend === 'neutral' ? undefined : stat.trend}
                         loading={stat.loading}
                         percentage={stat.percentage}
                     />

@@ -932,7 +932,7 @@ export default function PaymentAuditPage() {
             provider: E_PaymentProvider.PAYPAL,
         };
         if (statusFilter !== ALL_STATUS)
-            filter.status = statusFilter;
+            filter['status'] = statusFilter;
         return filter;
     }, [statusFilter]);
 
@@ -942,7 +942,7 @@ export default function PaymentAuditPage() {
             orderType: E_OrderType.SUBSCRIPTION,
         };
         if (statusFilter !== ALL_STATUS)
-            filter.status = statusFilter;
+            filter['status'] = statusFilter;
         return filter;
     }, [statusFilter]);
 
@@ -952,14 +952,14 @@ export default function PaymentAuditPage() {
             provider: E_PaymentProvider.PAYPAL,
         };
         if (statusFilter !== ALL_STATUS)
-            filter.source = statusFilter;
+            filter['source'] = statusFilter;
         return filter;
     }, [statusFilter]);
 
     const paymentRequestFilter = useMemo(() => {
         const filter: Record<string, unknown> = { isDel: false, gateway: 'PAYPAL' };
         if (statusFilter !== ALL_STATUS)
-            filter.status = statusFilter;
+            filter['status'] = statusFilter;
         return filter;
     }, [statusFilter]);
 
@@ -968,7 +968,7 @@ export default function PaymentAuditPage() {
             provider: E_PaymentProvider.PAYPAL,
         };
         if (statusFilter !== ALL_STATUS)
-            filter.status = statusFilter;
+            filter['status'] = statusFilter;
         return filter;
     }, [statusFilter]);
 
@@ -978,7 +978,7 @@ export default function PaymentAuditPage() {
             provider: E_PaymentProvider.PAYPAL,
         };
         if (statusFilter !== ALL_STATUS)
-            filter.processingStatus = statusFilter;
+            filter['processingStatus'] = statusFilter;
         return filter;
     }, [statusFilter]);
 

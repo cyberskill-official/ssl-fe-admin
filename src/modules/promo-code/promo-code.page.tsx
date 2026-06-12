@@ -55,10 +55,6 @@ export function PromoCodesPage() {
         return filter;
     };
 
-    const _hasActiveFilters = filters.code.trim() !== ''
-        || filters.isActive !== 'all'
-        || filters.isLimit !== 'all';
-
     const { promoCodes, loading, refetch, totalDocs: _totalDocs } = useGetPromoCodes(
         buildFilter(),
         { pagination: false },

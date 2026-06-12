@@ -29,7 +29,7 @@ import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'r
 import { useDropzone } from 'react-dropzone';
 import { Controller, useForm } from 'react-hook-form';
 
-import type { Input_CreateDestination, Input_UpdateDestination, T_City, T_Destination } from '#shared/graphql';
+import type { Input_CreateDestination, Input_UpdateDestination, T_City, T_Country, T_Destination } from '#shared/graphql';
 
 import { useGetCountries } from '#modules/location';
 import { useGetCities } from '#modules/location/city/city.hook';
@@ -62,6 +62,64 @@ function getFormText(value: unknown) {
 
 function getOptionText(value: unknown, fallback = '') {
     return getDestinationText(value, fallback).trim();
+}
+
+function isNonNullable<T>(value: T | null | undefined): value is T {
+    return value !== null && value !== undefined;
+}
+
+function hasId<T extends { id?: null | string }>(value: T | null | undefined): value is T & { id: string } {
+    return !!value?.id;
+}
+
+function hasCityIds(value: T_City | null | undefined): value is T_City & { countryId: string; id: string } {
+    return !!value?.id && !!value?.countryId;
+}
+
+function parseOptionalCoordinate(value: null | number | string | undefined) {
+    if (value === null || value === undefined || value === '') {
+        return undefined;
+    }
+
+    const coordinate = typeof value === 'number' ? value : Number.parseFloat(value);
+    return Number.isNaN(coordinate) ? undefined : coordinate;
+}
+
+function parseCoordinatesInput(value: string): [number, number] | undefined {
+    let coords: number[] = [];
+
+    if (value.includes(',')) {
+        coords = value.split(',').map(c => Number.parseFloat(c.trim()));
+    }
+    else if (value.includes(' ')) {
+        coords = value.split(' ').filter(c => c.trim()).map(c => Number.parseFloat(c.trim()));
+    }
+
+    const [lat, lng] = coords;
+    if (lat === undefined || lng === undefined || Number.isNaN(lat) || Number.isNaN(lng)) {
+        return undefined;
+    }
+
+    return [lat, lng];
+}
+
+function toPickerCountry(country: T_Country & { id: string }) {
+    return {
+        id: country.id,
+        name: getOptionText(country.name, 'Unknown Country'),
+        latitude: parseOptionalCoordinate(country.latitude),
+        longitude: parseOptionalCoordinate(country.longitude),
+    };
+}
+
+function toPickerCity(city: T_City & { countryId: string; id: string }) {
+    return {
+        id: city.id,
+        name: getOptionText(city.name, 'Unknown City'),
+        latitude: parseOptionalCoordinate(city.latitude),
+        longitude: parseOptionalCoordinate(city.longitude),
+        countryId: city.countryId,
+    };
 }
 
 const FORM_DEFAULT_VALUES: I_DestinationFormData = {
@@ -186,7 +244,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
             const currentCityId = watch('location.cityId');
 
             if (expectedCityId && expectedCityId !== currentCityId) {
-                const cityExists = cities.some(city => city.id === expectedCityId);
+                const cityExists = cities.filter(isNonNullable).some(city => city.id === expectedCityId);
                 if (cityExists) {
                     setValue('location.cityId', expectedCityId);
                 }
@@ -208,7 +266,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
         const loadCitiesForHotels = async () => {
             const hotelCountryIds = (watch('nearbyHotels') || [])
                 .map((_, index) => watch(`nearbyHotels.${index}.location.countryId`))
-                .filter(Boolean);
+                .filter(isNonNullable);
 
             const uniqueCountryIds = [...new Set(hotelCountryIds)];
 
@@ -222,10 +280,11 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                             },
                         });
 
-                        if (result.data?.getCities?.result?.docs) {
+                        const hotelCities = result.data?.getCities?.result?.docs;
+                        if (hotelCities) {
                             setHotelCitiesCache(prev => ({
                                 ...prev,
-                                [countryId]: result.data.getCities.result.docs,
+                                [countryId]: hotelCities.filter(isNonNullable),
                             }));
                         }
                     }
@@ -574,7 +633,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
 
                 if (countryFeature) {
                     const countryName = countryFeature.text;
-                    const foundCountry = countries?.find(c =>
+                    const foundCountry = countries?.filter(isNonNullable).find(c =>
                         getOptionText(c.name).toLowerCase() === countryName.toLowerCase(),
                     );
 
@@ -589,7 +648,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                         if (cityFeature) {
                             const cityName = cityFeature.text;
                             setTimeout(() => {
-                                const foundCity = cities?.find(c =>
+                                const foundCity = cities?.filter(isNonNullable).find(c =>
                                     c.countryId === foundCountry.id && getOptionText(c.name).toLowerCase() === cityName.toLowerCase(),
                                 );
                                 if (foundCity) {
@@ -657,11 +716,11 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
 
                 if (countryFeature) {
                     const countryName = countryFeature.text;
-                    const foundCountry = countries?.find(c =>
+                    const foundCountry = countries?.filter(isNonNullable).find(c =>
                         getOptionText(c.name).toLowerCase() === countryName.toLowerCase(),
                     );
 
-                    if (foundCountry) {
+                    if (foundCountry?.id) {
                         setValue(`nearbyHotels.${hotelIndex}.location.countryId`, foundCountry.id);
                         const cityFeature = geo.features.find((feature: I_MapTilerFeature) =>
                             feature.place_type?.includes('place') || feature.place_type?.includes('locality'),
@@ -704,8 +763,6 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
     };
 
     const hasMapCoordinates = watch('location.map.latitude') && watch('location.map.longitude');
-    // eslint-disable-next-line unused-imports/no-unused-vars
-    const isAddressFromMap = hasMapCoordinates;
 
     const _toggleHighlight = (category: keyof Pick<I_DestinationFormData, 'highlightSex' | 'highlightWellness' | 'highlightBar' | 'highlightDance'>) => {
         setEnabledHighlights((prev) => {
@@ -1104,18 +1161,11 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                         if (e.key === 'Enter') {
                                                             e.preventDefault();
                                                             const value = e.currentTarget.value.trim();
-                                                            let coords: number[] = [];
-
-                                                            if (value.includes(',')) {
-                                                                coords = value.split(',').map(c => Number.parseFloat(c.trim()));
-                                                            }
-                                                            else if (value.includes(' ')) {
-                                                                coords = value.split(' ').filter(c => c.trim()).map(c => Number.parseFloat(c.trim()));
-                                                            }
-
-                                                            if (coords.length === 2 && !Number.isNaN(coords[0]) && !Number.isNaN(coords[1])) {
-                                                                if (coords[0] >= -90 && coords[0] <= 90 && coords[1] >= -180 && coords[1] <= 180) {
-                                                                    _handleCoordinatePaste(coords[0], coords[1]);
+                                                            const parsedCoords = parseCoordinatesInput(value);
+                                                            if (parsedCoords) {
+                                                                const [lat, lng] = parsedCoords;
+                                                                if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                                                                    _handleCoordinatePaste(lat, lng);
                                                                     e.currentTarget.value = '';
                                                                 }
                                                                 else {
@@ -1137,18 +1187,11 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                         const input = document.getElementById('coordinates-input-main') as HTMLInputElement;
                                                         if (input) {
                                                             const value = input.value.trim();
-                                                            let coords: number[] = [];
-
-                                                            if (value.includes(',')) {
-                                                                coords = value.split(',').map(c => Number.parseFloat(c.trim()));
-                                                            }
-                                                            else if (value.includes(' ')) {
-                                                                coords = value.split(' ').filter(c => c.trim()).map(c => Number.parseFloat(c.trim()));
-                                                            }
-
-                                                            if (coords.length === 2 && !Number.isNaN(coords[0]) && !Number.isNaN(coords[1])) {
-                                                                if (coords[0] >= -90 && coords[0] <= 90 && coords[1] >= -180 && coords[1] <= 180) {
-                                                                    _handleCoordinatePaste(coords[0], coords[1]);
+                                                            const parsedCoords = parseCoordinatesInput(value);
+                                                            if (parsedCoords) {
+                                                                const [lat, lng] = parsedCoords;
+                                                                if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                                                                    _handleCoordinatePaste(lat, lng);
                                                                     input.value = '';
                                                                     input.style.borderColor = 'green';
                                                                     setTimeout(() => {
@@ -1169,12 +1212,12 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 {watch('location.countryId') && (
                                                     <Badge variant="outline" className="text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-600">
-                                                        {getDestinationText(countries?.find(c => c.id === watch('location.countryId'))?.name, 'Unknown Country')}
+                                                        {getDestinationText(countries?.filter(isNonNullable).find(c => c.id === watch('location.countryId'))?.name, 'Unknown Country')}
                                                     </Badge>
                                                 )}
                                                 {watch('location.cityId') && (
                                                     <Badge variant="outline" className="text-green-600 border-green-300 dark:text-green-400 dark:border-green-600">
-                                                        {getDestinationText(cities?.find(c => c.id === watch('location.cityId'))?.name, 'Unknown City')}
+                                                        {getDestinationText(cities?.filter(isNonNullable).find(c => c.id === watch('location.cityId'))?.name, 'Unknown City')}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -1663,7 +1706,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                         <input type="hidden" {...register(`${key}.reason` as FieldPath<I_DestinationFormData>)} />
                                                         {errors[key]?.reason && (
                                                             <p className="text-red-500 text-xs mt-1">
-                                                                {errors[key]?.reason as string}
+                                                                {errors[key]?.reason?.message as string | undefined}
                                                             </p>
                                                         )}
                                                     </div>
@@ -1741,7 +1784,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                             <input type="hidden" {...register(key)} />
                                                             {errors[key] && (
                                                                 <p className="text-red-500 text-xs mt-1">
-                                                                    {errors[key] as string}
+                                                                    {errors[key]?.message as string | undefined}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -1794,7 +1837,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                     </div>
 
                                     <div className="space-y-4">
-                                        {(watch('nearbyHotels') || []).map((hotel, index) => (
+                                        {(watch('nearbyHotels') || []).map((_hotel, index) => (
                                             <motion.div
                                                 // eslint-disable-next-line react/no-array-index-key
                                                 key={index}
@@ -1838,7 +1881,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                     {...field}
                                                                     placeholder={t('enter-hotel-name')}
                                                                     aria-invalid={!!errors.nearbyHotels?.[index]?.name}
-                                                                    value={field.value ?? ''}
+                                                                    value={(field.value as string) ?? ''}
                                                                     className={`h-10 text-sm ${errors.nearbyHotels?.[index]?.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500 dark:border-red-400 dark:focus:border-red-400 dark:focus:ring-red-400' : 'border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400'} bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
                                                                 />
                                                             )}
@@ -1879,7 +1922,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                     control={control}
                                                                     render={({ field }) => {
                                                                         const hotelCountryId = watch(`nearbyHotels.${index}.location.countryId`);
-                                                                        const hotelCities = hotelCitiesCache[hotelCountryId] || [];
+                                                                        const hotelCities = hotelCountryId ? hotelCitiesCache[hotelCountryId] || [] : [];
                                                                         return (
                                                                             <AutocompleteSelect
                                                                                 options={hotelCities
@@ -1893,7 +1936,6 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                                 placeholder={citiesLoading ? 'Loading city....' : 'Select city '}
                                                                                 className={`h-10 text-sm ${errors.nearbyHotels?.[index]?.location?.cityId ? 'border-red-500 focus:border-red-500 focus:ring-red-500 dark:border-red-400 dark:focus:border-red-400 dark:focus:ring-red-400' : 'border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400'} bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
                                                                                 error={!!errors.nearbyHotels?.[index]?.location?.cityId}
-                                                                                loading={false}
                                                                             />
                                                                         );
                                                                     }}
@@ -1965,18 +2007,11 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                         if (e.key === 'Enter') {
                                                                             e.preventDefault();
                                                                             const value = e.currentTarget.value.trim();
-                                                                            let coords: number[] = [];
-
-                                                                            if (value.includes(',')) {
-                                                                                coords = value.split(',').map(c => Number.parseFloat(c.trim()));
-                                                                            }
-                                                                            else if (value.includes(' ')) {
-                                                                                coords = value.split(' ').filter(c => c.trim()).map(c => Number.parseFloat(c.trim()));
-                                                                            }
-
-                                                                            if (coords.length === 2 && !Number.isNaN(coords[0]) && !Number.isNaN(coords[1])) {
-                                                                                if (coords[0] >= -90 && coords[0] <= 90 && coords[1] >= -180 && coords[1] <= 180) {
-                                                                                    _handleHotelCoordinatePaste(index, coords[0], coords[1]);
+                                                                            const parsedCoords = parseCoordinatesInput(value);
+                                                                            if (parsedCoords) {
+                                                                                const [lat, lng] = parsedCoords;
+                                                                                if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                                                                                    _handleHotelCoordinatePaste(index, lat, lng);
                                                                                     e.currentTarget.value = '';
                                                                                 }
                                                                                 else {
@@ -1998,18 +2033,11 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                         const input = document.getElementById(`coordinates-input-hotel-${index}`) as HTMLInputElement;
                                                                         if (input) {
                                                                             const value = input.value.trim();
-                                                                            let coords: number[] = [];
-
-                                                                            if (value.includes(',')) {
-                                                                                coords = value.split(',').map(c => Number.parseFloat(c.trim()));
-                                                                            }
-                                                                            else if (value.includes(' ')) {
-                                                                                coords = value.split(' ').filter(c => c.trim()).map(c => Number.parseFloat(c.trim()));
-                                                                            }
-
-                                                                            if (coords.length === 2 && !Number.isNaN(coords[0]) && !Number.isNaN(coords[1])) {
-                                                                                if (coords[0] >= -90 && coords[0] <= 90 && coords[1] >= -180 && coords[1] <= 180) {
-                                                                                    _handleHotelCoordinatePaste(index, coords[0], coords[1]);
+                                                                            const parsedCoords = parseCoordinatesInput(value);
+                                                                            if (parsedCoords) {
+                                                                                const [lat, lng] = parsedCoords;
+                                                                                if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                                                                                    _handleHotelCoordinatePaste(index, lat, lng);
                                                                                     input.value = '';
                                                                                     input.style.borderColor = 'green';
                                                                                     setTimeout(() => {
@@ -2074,7 +2102,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                                 placeholder={t('enter-hotel-description')}
                                                                 rows={3}
                                                                 aria-invalid={!!errors.nearbyHotels?.[index]?.description}
-                                                                value={field.value ?? ''}
+                                                                value={(field.value as string) ?? ''}
                                                                 className={`w-full px-3 py-2 border rounded-lg font-sans text-sm ${errors.nearbyHotels?.[index]?.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500 dark:border-red-400 dark:focus:border-red-400 dark:focus:ring-red-400' : 'border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400'} bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
                                                             />
                                                         )}
@@ -2090,7 +2118,7 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                                                             ? (
                                                                     <div className="relative">
                                                                         <img
-                                                                            src={watch(`nearbyHotels.${index}.image`)}
+                                                                            src={watch(`nearbyHotels.${index}.image`) ?? undefined}
                                                                             alt={t('hotel-image-alt')}
                                                                             className="max-w-full mx-auto rounded max-h-32"
                                                                         />
@@ -2208,21 +2236,10 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 {showMapPicker && env.VITE_MAPTILER_KEY && (
                     <MapTilerPicker
                         apiKey={env.VITE_MAPTILER_KEY}
-                        countries={countries?.map(country => ({
-                            id: country.id!,
-                            name: getOptionText(country.name, 'Unknown Country'),
-                            latitude: country.latitude || undefined,
-                            longitude: country.longitude || undefined,
-                        })) || []}
-                        cities={cities?.map(city => ({
-                            id: city.id!,
-                            name: getOptionText(city.name, 'Unknown City'),
-                            latitude: city.latitude || undefined,
-                            longitude: city.longitude || undefined,
-                            countryId: city.countryId!,
-                        })) || []}
-                        currentLng={watch('location.map.longitude')}
-                        currentLat={watch('location.map.latitude')}
+                        countries={countries?.filter(hasId).map(toPickerCountry) || []}
+                        cities={cities?.filter(hasCityIds).map(toPickerCity) || []}
+                        currentLng={watch('location.map.longitude') ?? undefined}
+                        currentLat={watch('location.map.latitude') ?? undefined}
                         defaultLng={106.6297}
                         defaultLat={10.8231}
                         selectedCountryId={watch('location.countryId') || ''}
@@ -2238,21 +2255,10 @@ export function DestinationForm({ ref, onCreateSubmit, onUpdateSubmit, creating,
                 {showHotelMapPicker !== null && env.VITE_MAPTILER_KEY && (
                     <MapTilerPicker
                         apiKey={env.VITE_MAPTILER_KEY}
-                        countries={countries?.map(country => ({
-                            id: country.id!,
-                            name: getOptionText(country.name, 'Unknown Country'),
-                            latitude: country.latitude || undefined,
-                            longitude: country.longitude || undefined,
-                        })) || []}
-                        cities={cities?.map(city => ({
-                            id: city.id!,
-                            name: getOptionText(city.name, 'Unknown City'),
-                            latitude: city.latitude || undefined,
-                            longitude: city.longitude || undefined,
-                            countryId: city.countryId!,
-                        })) || []}
-                        currentLng={watch(`nearbyHotels.${showHotelMapPicker}.location.map.longitude`)}
-                        currentLat={watch(`nearbyHotels.${showHotelMapPicker}.location.map.latitude`)}
+                        countries={countries?.filter(hasId).map(toPickerCountry) || []}
+                        cities={cities?.filter(hasCityIds).map(toPickerCity) || []}
+                        currentLng={watch(`nearbyHotels.${showHotelMapPicker}.location.map.longitude`) ?? undefined}
+                        currentLat={watch(`nearbyHotels.${showHotelMapPicker}.location.map.latitude`) ?? undefined}
                         defaultLng={106.6297}
                         defaultLat={10.8231}
                         selectedCountryId={watch(`nearbyHotels.${showHotelMapPicker}.location.countryId`) || ''}

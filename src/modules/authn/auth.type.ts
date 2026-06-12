@@ -1,6 +1,8 @@
-import type { ApolloError } from '@cyberskill/shared/react/apollo-error';
+import type { useQuery } from '@cyberskill/shared/react/apollo-client';
 
 import type { loginMutationVariables, T_Auth } from '#shared/graphql';
+
+type T_AuthError = ReturnType<typeof useQuery>['error'];
 
 export interface I_Auth extends T_Auth {
     isLoggedIn: boolean;
@@ -8,7 +10,7 @@ export interface I_Auth extends T_Auth {
 
 export interface I_AuthContext {
     isLoading: boolean;
-    error: ApolloError | undefined;
+    error: T_AuthError;
     checkAuth: () => void;
     auth: I_Auth | undefined;
     setAuth: React.Dispatch<React.SetStateAction<I_Auth | undefined>>;

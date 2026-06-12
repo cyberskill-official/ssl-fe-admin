@@ -17,6 +17,7 @@
                 "./src/shared/*"
             ]
         },
+        "checkJs": false,
         "noEmit": true
     },
     "include": [
